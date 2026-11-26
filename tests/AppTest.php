@@ -36,7 +36,8 @@ final class AppTest extends TestCase
 
     private static function validPost(array $override = []): array
     {
-        return $override + ['lang' => 'de'] + OrderValidatorTest::valid();
+        // «ft»: signierter Zeitstempel, wie ihn ein Mensch nach einer Minute absendet (Spamschutz).
+        return $override + ['lang' => 'de', 'ft' => SpamToken::valid(self::now())] + OrderValidatorTest::valid();
     }
 
     public function testFormPageInAllLanguages(): void
@@ -241,17 +242,25 @@ final class AppTest extends TestCase
         };
     }
 
+    private const LIVE_SECRET = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+
     private static function liveApp(OrderService $orders): App
     {
-        return new App(Config::fromArray(['APP_MODE' => 'live', 'APP_SECRET' => str_repeat('x', 32)]), APP_ROOT, self::now(),
+        return new App(Config::fromArray(['APP_MODE' => 'live', 'APP_SECRET' => self::LIVE_SECRET]), APP_ROOT, self::now(),
             static fn (string $tmp): bool => true, $orders);
+    }
+
+    /** Gültiger Antrag für den Live-Modus: Zeitstempel mit dem Live-Schlüssel signiert. */
+    private static function livePost(array $override = []): array
+    {
+        return self::validPost($override + ['ft' => SpamToken::valid(self::now(), self::LIVE_SECRET)]);
     }
 
     public function testValidOrderIsSentWithAttachments(): void
     {
         $orders = self::orders();
         $files = UploadFixtures::files([UploadFixtures::png(), UploadFixtures::pdf()]);
-        $response = self::submit(self::validPost(['lang' => 'fr']), self::liveApp($orders), $files);
+        $response = self::submit(self::livePost(['lang' => 'fr']), self::liveApp($orders), $files);
         self::assertSame(303, $response->status);
         self::assertSame('Bern 4/1234', $orders->sent->grundbuchblatt);
         self::assertSame(1250000, $orders->sent->betrag);
@@ -266,7 +275,7 @@ final class AppTest extends TestCase
     public function testFailedSendShowsFormAgainWithInputAndPhone(): void
     {
         $log = ini_set('error_log', '/dev/null');
-        $response = self::submit(self::validPost(), self::liveApp(self::orders('fail')));
+        $response = self::submit(self::livePost(), self::liveApp(self::orders('fail')));
         ini_set('error_log', (string) $log);
         self::assertSame(200, $response->status);
         self::assertStringContainsString('Ihr Antrag konnte leider nicht übermittelt werden', $response->body);
@@ -278,7 +287,7 @@ final class AppTest extends TestCase
 
     public function testFailedConfirmationMailIsShownOnConfirmationPage(): void
     {
-        $response = self::submit(self::validPost(), self::liveApp(self::orders('bank_failed')));
+        $response = self::submit(self::livePost(), self::liveApp(self::orders('bank_failed')));
         self::assertSame(303, $response->status);
         parse_str(substr((string) $response->header('Location'), 1), $get);
         $page = self::liveApp(self::orders())->handle('GET', $get, []);

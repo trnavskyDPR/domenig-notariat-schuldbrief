@@ -27,7 +27,7 @@ try {
     $app = new App($config, APP_ROOT, orders: ServiceFactory::orders($config, APP_ROOT));
     // Ist die Anfrage grösser als post_max_size, verwirft PHP Formularfelder UND Dateien: $_POST bleibt leer.
     $bodyTooLarge = $method === 'POST' && $_POST === [] && $_FILES === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0;
-    $response = $app->handle($method, $_GET, $_POST, $_FILES, $bodyTooLarge);
+    $response = $app->handle($method, $_GET, $_POST, $_FILES, $bodyTooLarge, $_SERVER);
 } catch (Throwable $e) {
     error_log('Start fehlgeschlagen: ' . App::logLine($e));
     $response = Response::html(

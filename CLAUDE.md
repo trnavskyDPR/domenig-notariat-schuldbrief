@@ -106,5 +106,8 @@ tests/       PHPUnit
   ans Testpostfach. Bei Fehler der internen Mail: Formular mit Eingaben + Meldung, keine Bestätigung.
   `ID_COPY_RECIPIENTS` ausserhalb von `INTERNAL_RECIPIENTS` = Einstellungsfehler (nie stillschweigend
   verlieren). **Praxistest mit `APP_MODE=test` ausstehend** (wartet auf Entra-App von InfoPro).
-- [ ] d) Spamschutz (Fallenfeld, Mindest-Ausfüllzeit, Limit pro IP), README mit Betrieb,
-  Schlüsselwechsel, Fehlersuche und Livegang-Checkliste
+- [x] d) Fallenfeld, Mindest-Ausfüllzeit (3 s), Limit pro IP (nur HMAC der IP, 1 h – wie im
+  Beglaubigungstool), README mit Betrieb auf Atoll, Entra/Exchange, Schlüsselwechsel,
+  Fehlersuche, Livegang-Checkliste und Datenschutz
+- [ ] Praxistest mit `APP_MODE=test` (wartet auf Entra-App von InfoPro und Atoll-Environment)
+- [ ] Repo nach `domenig-partner` übertragen, Atoll anbinden, Livegang (Checkliste im README)

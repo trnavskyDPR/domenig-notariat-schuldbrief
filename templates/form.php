@@ -60,6 +60,12 @@ $privacyLink = '<a href="' . $e($config->privacyUrl($i18n->lang)) . '" target="_
 
   <form class="form" id="f-form" method="post" action="?lang=<?= $e($i18n->lang) ?>" enctype="multipart/form-data" novalidate data-form>
     <input type="hidden" name="lang" value="<?= $e($i18n->lang) ?>">
+    <input type="hidden" name="ft" value="<?= $e($formToken ?? '') ?>">
+    <?php /* Fallenfeld gegen Bots: für Menschen unsichtbar und nicht per Tastatur erreichbar. */ ?>
+    <div class="hp" aria-hidden="true">
+      <label for="f-website"><?= $t('field.honeypot') ?></label>
+      <input type="text" id="f-website" name="website" value="" tabindex="-1" autocomplete="off">
+    </div>
 
     <section class="block" aria-labelledby="h-property">
       <h2 id="h-property"><?= $t('section.property') ?></h2>

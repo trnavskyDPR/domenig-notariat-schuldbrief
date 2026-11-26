@@ -29,6 +29,7 @@ final class Config
         'SENDER_MAILBOX' => 'notariat@domenig.law',
         'INTERNAL_RECIPIENTS' => 'info@domenig.law,notariat@domenig.law,schneider@domenig.law',
         'ID_COPY_RECIPIENTS' => 'info@domenig.law,notariat@domenig.law,schneider@domenig.law',
+        'RATE_LIMIT_PER_HOUR' => '10',
     ];
 
     /** @param array<string, string> $vars */
@@ -165,6 +166,12 @@ final class Config
     public function bankRecipient(string $bankEmail): string
     {
         return $this->mode() === 'test' ? $this->get('TEST_MAILBOX') : $bankEmail;
+    }
+
+    /** Höchstzahl Absendeversuche pro IP-Adresse und Stunde. 0 = kein Limit. */
+    public function rateLimitPerHour(): int
+    {
+        return $this->int('RATE_LIMIT_PER_HOUR');
     }
 
     public function contactPhone(): string

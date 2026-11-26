@@ -4,10 +4,9 @@ Online-Antrag für Schuldbriefbestellungen unter **https://schuldbrief.domenig.l
 (ersetzt das Jotform-Formular). Die Bank füllt das Formular aus; das Notariat erhält alle
 Angaben per Mail, die Bank eine Eingangsbestätigung. Das Tool speichert **keine** Antragsdaten.
 
-> Stand: Schritte a–c (Formular, Validierung, DE/FR/EN, Mock-Modus, Upload der
-> Ausweiskopien, Mailversand über Microsoft Graph). Praxistest im Modus `test` folgt, sobald
-> InfoPro die Entra-App eingerichtet hat. Spamschutz, Betrieb, Fehlersuche und
-> Livegang-Checkliste kommen mit Schritt d.
+> Stand: Schritte a–d umgesetzt (Formular, Upload der Ausweiskopien, Mailversand über
+> Microsoft Graph, Spamschutz). **Noch nicht im Modus `test` erprobt** – wartet auf die
+> Entra-App von InfoPro. Für den Livegang die **Checkliste** unten abarbeiten.
 >
 > **Upload:** Entscheid des Vorgesetzten von Trevor Trnavsky noch ausstehend – ohne Entscheid
 > kein Livegang mit Upload.
@@ -65,6 +64,7 @@ composer test
 | `SENDER_MAILBOX` | `notariat@domenig.law` | Absender aller Mails (im Modus `test`: `TEST_MAILBOX`) |
 | `INTERNAL_RECIPIENTS` | `info@…,notariat@…,schneider@…` | Wer bei jedem Antrag eine Mail erhält, je ein eigenes Exemplar (im Modus `test`: nur `TEST_MAILBOX`) |
 | `ID_COPY_RECIPIENTS` | `info@…,notariat@…,schneider@…` | Wer davon die Ausweiskopien als Anhang erhält. Muss in `INTERNAL_RECIPIENTS` stehen. Die übrigen erhalten die Mail ohne Anhang |
+| `RATE_LIMIT_PER_HOUR` | `10` | Höchstzahl Absendeversuche pro IP-Adresse und Stunde, `0` = kein Limit |
 
 ## Formular
 
@@ -144,6 +144,150 @@ PHP-Einstellungen (im `Dockerfile` gesetzt, bei anderem Hosting selbst eintragen
 Ohne diese Werte lehnt PHP grössere Dateien ab; die App zeigt dann «Eine Datei ist zu gross» bzw.
 «Die Dateien sind insgesamt zu gross».
 
+## Spamschutz
+
+- **Fallenfeld** «website»: unsichtbar für Menschen; Bots füllen es aus → abgewiesen.
+- **Mindest-Ausfüllzeit:** Wer das Formular in unter 3 Sekunden absendet, wird abgewiesen. Das
+  Formular trägt dafür einen signierten Zeitstempel (2 Tage gültig).
+- **Limit pro IP:** höchstens `RATE_LIMIT_PER_HOUR` (Standard 10) Absendeversuche pro IP-Adresse
+  und Stunde. Gespeichert wird nur ein nicht umkehrbarer Code (HMAC) der IP-Adresse mit den
+  Zeitpunkten, im temporären Ordner des Containers; Einträge verfallen nach einer Stunde. Hinter
+  dem Atoll-Gateway zählt der letzte öffentliche Eintrag im Header `X-Forwarded-For`. Sieht die App
+  nur eine interne Adresse, gilt für diese Anfrage kein Limit – so werden nie alle Besucher
+  gemeinsam gesperrt. (Gleiches Vorgehen wie im Beglaubigungstool, abgesegnet 17.11.2026.)
+- Bei allen Spam-Meldungen bleiben die Eingaben erhalten; nur die Dateien müssen neu gewählt werden.
+- Kein reCAPTCHA, keine Drittanbieter.
+
+## Links für die Website (Statamic)
+
+| Website-Sprache | Link |
+|---|---|
+| Deutsch | `https://schuldbrief.domenig.law/?lang=de` |
+| Französisch | `https://schuldbrief.domenig.law/?lang=fr` |
+| Englisch | `https://schuldbrief.domenig.law/?lang=en` |
+
+Das Tool wird verlinkt, nicht eingebettet: Einbetten per iframe ist aus Sicherheitsgründen
+gesperrt (`frame-ancestors 'none'`).
+
+## Betrieb auf Atoll
+
+Die App läuft als Docker-Container auf **Atoll** (Eutima), Environment **Production**, Branch
+`main`, Playbook «Webapp» (Profil «Generic»). Atoll baut das `Dockerfile` und prüft den
+Health-Check `/metrics` auf Port 8000.
+
+**Voraussetzung:** Das Repo liegt in der Organisation `domenig-partner`
+(`domenig-partner/domenig-notariat-schuldbrief`) – Atoll ist mit der Organisation verbunden.
+
+### Einrichten (einmalig)
+
+1. Atoll → neues Environment **Production**, Branch `main`, Deployment-Host wählen,
+   eigene Domain `schuldbrief.domenig.law`. Atoll zeigt dann die **CNAME-Anweisung** für den DNS.
+   Weicht sie vom Eintrag ab, den InfoPro gesetzt hat («gleiches Ziel wie
+   beglaubigungstermin.domenig.law»), InfoPro den richtigen Wert schicken.
+2. **Variablen** setzen (Production → Variablen). Atoll erwartet **jeden** Schlüssel aus
+   `.env.example` und blockiert das Deployment, solange einer leer ist:
+
+   | Variable | Wert |
+   |---|---|
+   | `APP_MODE` | zuerst `test`, nach dem Praxistest `live` |
+   | `APP_SECRET` | neu erzeugen: `php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'` – **nicht** den des Beglaubigungstools übernehmen |
+   | `GRAPH_TENANT_ID` | `ae4b51b9-1564-4bd2-a852-6100861922ec` |
+   | `GRAPH_CLIENT_ID` | Anwendungs-ID der neuen App (von InfoPro) |
+   | `GRAPH_CLIENT_SECRET` | geheimer Clientschlüssel (LastPass) |
+   | alle übrigen | Werte aus `.env.example` übernehmen |
+
+3. Deployen, Seite aufrufen, Testantrag (siehe Checkliste).
+
+### Laufender Betrieb
+
+- **Neue Version:** Pull Request auf `main` mergen → Atoll baut neu (bei Production mit
+  Freigabe). Nach dem Deployment die Seite kurz aufrufen.
+- **Logs:** in Atoll beim Environment. Zeilen der App beginnen mit `[schuldbrief]` und enthalten
+  nie Antragsdaten.
+
+### Entra-ID-App und Exchange (einmalig, durch InfoPro)
+
+Neue Apps, Postfächer oder Rechte immer über den InfoPro-Support.
+
+| Was | Wert |
+|---|---|
+| App-Name | Schuldbriefbestellung (Atoll) |
+| Anwendungs-ID (Client) | _nach Einrichtung durch InfoPro eintragen_ |
+| Verzeichnis-ID (Tenant) | `ae4b51b9-1564-4bd2-a852-6100861922ec` |
+| Besitzer | adm-trnavsky@domenig.law |
+| API-Berechtigungen in Entra | **keine**, kein Admin-Consent |
+| Exchange RBAC for Applications | nur `Application Mail.Send` |
+| Management Scope | «Schuldbriefbestellung Postfaecher»: notariat@, test-notariat@ |
+
+Empfänger von Mails (info@, schneider@) müssen **nicht** im Scope sein.
+
+### Geheimen Schlüssel erneuern (alle 24 Monate)
+
+1. Entra → App-Registrierungen → *Besitzte Anwendungen* → «Schuldbriefbestellung (Atoll)»
+   → Zertifikate & Geheimnisse → **Neuer geheimer Clientschlüssel** (24 Monate).
+2. Wert in LastPass ablegen, in Atoll `GRAPH_CLIENT_SECRET` ersetzen, neu deployen.
+3. Testantrag senden, dann den **alten** Schlüssel in Entra löschen.
+4. Neues Ablaufdatum in den Kalender eintragen (Erinnerung 1 Monat vorher).
+
+Läuft der Schlüssel ab, sieht die Bank beim Absenden «konnte leider nicht übermittelt werden»
+mit Telefonnummer, und im Log steht `invalid_client`.
+
+### Fehlersuche
+
+| Im Log | Bedeutung | Lösung |
+|---|---|---|
+| `ConfigException – GRAPH_TENANT_ID …` | Variable fehlt oder ist falsch | in Atoll prüfen |
+| `ConfigException – APP_SECRET …` | Schlüssel fehlt oder ist zu kurz | in Atoll setzen (mind. 32 Zeichen) |
+| `ConfigException – ID_COPY_RECIPIENTS …` | Ausweiskopie-Empfänger nicht in `INTERNAL_RECIPIENTS` | Listen in Atoll angleichen |
+| `Graph HTTP 401 invalid_client` | Schlüssel falsch oder abgelaufen | Schlüssel erneuern (oben) |
+| `Graph HTTP 403 ErrorAccessDenied` | Absender-Postfach nicht im Exchange-Scope (oder Rechte noch nicht aktiv: bis 2 h nach Einrichtung) | warten bzw. InfoPro |
+| `ErrorMailboxNotFound` | Postfachadresse falsch | `SENDER_MAILBOX` / `TEST_MAILBOX` prüfen |
+| `ErrorMessageSizeExceeded` / `Graph HTTP 413` | Mail zu gross | sollte nicht vorkommen (Grenze 2.8 MB pro Mail) – melden |
+| `Netzwerkfehler (curl 6)` / `(curl 28)` | Microsoft nicht erreichbar bzw. Zeitüberschreitung | später erneut; hält es an: Atoll |
+| `Graph HTTP 429` / `503` | Microsoft überlastet (die App versucht es einmal erneut) | später erneut |
+| `Interne Mail fehlgeschlagen` | Antrag **nicht** angekommen, Bank sah eine Fehlermeldung | Ursache in derselben Zeile; Bank meldet sich ggf. telefonisch |
+| `Bestätigung an Bank fehlgeschlagen` | Antrag angekommen, Bestätigung an die Bank nicht | Bank kurz informieren |
+
+## Livegang-Checkliste
+
+1. [ ] **Entscheid des Vorgesetzten zum Upload** der Ausweiskopien (Datum in CLAUDE.md eintragen)
+2. [ ] Juristisch geklärt: Muss die Bank bestätigen, dass die Grundeigentümer mit der Weitergabe
+       ihrer Ausweiskopien einverstanden sind? (ggf. Text der Datenschutz-Checkbox anpassen)
+3. [ ] Französisch und Englisch von Muttersprachigen geprüft (`lang/fr.php`, `lang/en.php`)
+4. [ ] Datenschutzerklärung auf domenig.law ergänzt (Schuldbrief-Formular, Ausweiskopien Dritter,
+       Microsoft 365, Atoll), Links `PRIVACY_URL_DE/FR/EN` gesetzt
+5. [ ] InfoPro: Entra-App und Exchange-Rechte eingerichtet; Schlüssel erstellt und in LastPass;
+       Anwendungs-ID oben eingetragen
+6. [ ] Repo in `domenig-partner` übertragen, `aufbau` nach `main` gemergt
+7. [ ] Atoll: Environment Production, Variablen mit `APP_MODE=test` (siehe oben)
+8. [ ] DNS-CNAME `schuldbrief.domenig.law` gesetzt (InfoPro), Domain in Atoll «Verified»
+9. [ ] Testanträge im Modus `test` in allen drei Sprachen: mit Foto und PDF, einmal mit mehreren
+       grösseren Dateien («Teil 1 von 2»). In test-notariat@ kommen interne Mail und Bestätigung an
+10. [ ] info@, notariat@ und Christian Schneider wissen, dass Anträge neu so per Mail kommen
+11. [ ] In Atoll `APP_MODE=live` setzen, neu deployen
+12. [ ] Ein echter Probeantrag mit eigener Adresse → alle drei Postfächer prüfen
+13. [ ] Links auf der Website (Statamic) umstellen, Jotform-Formular deaktivieren
+14. [ ] Ablaufdatum des Schlüssels im Kalender
+
+## Datenschutz
+
+- Keine Datenbank, keine gespeicherten Dateien, keine Session, keine Cookies.
+- Antragsdaten werden nur während der Anfrage im Arbeitsspeicher verarbeitet und gehen
+  ausschliesslich per Mail an das Notariat (und als Referenz an die Bank).
+- **Ausweiskopien:** PHP legt hochgeladene Dateien zwingend kurz in den temporären Ordner. Die App
+  liest sie sofort in den Arbeitsspeicher und löscht die temporären Dateien. Sie gehen
+  ausschliesslich als Anhang der internen Mail an `ID_COPY_RECIPIENTS` hinaus – nicht an die Bank,
+  nicht in Logs, nicht in «Gesendete Elemente». Der Dateiname der Bank wird nicht übernommen. Im
+  Mock-Modus werden sie geprüft und verworfen.
+- Die Bestätigung an die Bank enthält nur Grundbuchblatt-Nr. und Adresse als Referenz (kein
+  Betrag, keine Bankangaben), falls die E-Mail-Adresse vertippt ist.
+- Keine Antragsdaten in Logs. Die Bestätigungsseite erhält nur Sprache und Versandstatus in einem
+  signierten Link.
+- Keine Drittanbieter im Frontend (Schrift lokal, keine CDN, keine Analytics).
+- Limit pro IP: nur ein nicht umkehrbarer Code der IP-Adresse, eine Stunde lang.
+- Hinweis: Die Webserver-Logs von Atoll enthalten IP-Adressen. Aufbewahrungsdauer bei Eutima
+  klären und in der Datenschutzerklärung erwähnen.
+
 ## Aufbau
 
 ```
@@ -157,7 +301,7 @@ src/
   Order/             Antrag, Validierung, Betrag (Schweizer Format), Upload, Anhänge verkleinern,
                      Mailversand (GraphOrderService)
   Graph/             GraphClient (Anmeldung, Wiederholung bei 429/503), GraphException
-  Security/          Signer (signierte Links)
+  Security/          Signer (signierte Links), SpamGuard, RateLimiter
   Http/              Response mit Sicherheits-Headern (CSP), curl-Client, Health
 templates/   HTML-Templates
 lang/        Texte DE / FR / EN

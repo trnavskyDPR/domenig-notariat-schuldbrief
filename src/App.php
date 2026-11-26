@@ -13,7 +13,9 @@ use Schuldbrief\Order\AttachmentPreparer;
 use Schuldbrief\Order\OrderService;
 use Schuldbrief\Order\OrderValidator;
 use Schuldbrief\Order\UploadValidator;
+use Schuldbrief\Security\RateLimiter;
 use Schuldbrief\Security\Signer;
+use Schuldbrief\Security\SpamGuard;
 use Throwable;
 
 /**
@@ -43,8 +45,9 @@ final class App
      * @param array<string, mixed> $post
      * @param array<string, mixed> $files        $_FILES
      * @param bool                 $bodyTooLarge true, wenn PHP die ganze Anfrage verworfen hat (post_max_size überschritten)
+     * @param array<string, mixed> $server       $_SERVER (für IP-Adresse beim Limit pro IP)
      */
-    public function handle(string $method, array $get, array $post, array $files = [], bool $bodyTooLarge = false): Response
+    public function handle(string $method, array $get, array $post, array $files = [], bool $bodyTooLarge = false, array $server = []): Response
     {
         $lang = I18n::pick($method === 'POST' ? ($post['lang'] ?? $get['lang'] ?? null) : ($get['lang'] ?? null));
         $i18n = new I18n($lang, $this->root . '/lang');
@@ -57,7 +60,7 @@ final class App
                 $method === 'POST' && $bodyTooLarge => $this->form($view, [], [
                     'ausweis' => ['error.ausweis.post_too_big', ['max' => (int) ceil($this->config->uploadMaxBytes() / 1048576)]],
                 ]),
-                $method === 'POST' => $this->submit($post, $files, $i18n, $view),
+                $method === 'POST' => $this->submit($post, $files, $i18n, $view, self::clientIp($server)),
                 !in_array($method, ['GET', 'HEAD'], true) => Response::html(
                     $view->page('message', ['title' => 'error.method', 'text' => 'error.method', 'noindex' => true]),
                     405,
@@ -87,6 +90,7 @@ final class App
         return Response::html($view->page('form', [
             'values' => $values,
             'errors' => $errors,
+            'formToken' => $this->spamGuard()->formToken(),
         ]));
     }
 
@@ -94,8 +98,20 @@ final class App
      * @param array<string, mixed> $post
      * @param array<string, mixed> $files
      */
-    private function submit(array $post, array $files, I18n $i18n, View $view): Response
+    private function submit(array $post, array $files, I18n $i18n, View $view, string $ip): Response
     {
+        // Spamschutz: zuerst Limit pro IP, dann Fallenfeld und Mindest-Ausfüllzeit.
+        // Bei diesen Meldungen bleiben die Eingaben erhalten (die Dateien müssen neu gewählt werden).
+        $phone = ['phone' => $this->config->contactPhone()];
+        $keep = OrderValidator::cleanValues($post);
+        if ($ip !== '' && !$this->rateLimiter()->hit($ip, $this->now()->getTimestamp())) {
+            return $this->form($view, $keep, ['form' => ['error.rate_limit', $phone]]);
+        }
+        $spam = $this->spamGuard()->check($post);
+        if ($spam !== null) {
+            return $this->form($view, $keep, ['form' => [$spam, $phone]]);
+        }
+
         $uploads = new UploadValidator($this->config->uploadMaxBytes(), $this->config->uploadMaxFiles(), $this->isUploadedFile);
         $result = (new OrderValidator($uploads))->validate($post, $i18n->lang, $files);
         if (!$result->isValid()) {
@@ -157,6 +173,47 @@ final class App
             'noindex' => true,
             'langParams' => ['view' => 'confirmed', 't' => $token],
         ]));
+    }
+
+    private function spamGuard(): SpamGuard
+    {
+        return new SpamGuard(new Signer($this->config->secret()), $this->now());
+    }
+
+    /** Limit pro IP: nur ein HMAC der IP-Adresse im temporären Ordner, eine Stunde lang. */
+    private function rateLimiter(): RateLimiter
+    {
+        return new RateLimiter(
+            sys_get_temp_dir() . '/schuldbrief-rate',
+            hash_hmac('sha256', 'rate-limit', $this->config->secret()),
+            $this->config->rateLimitPerHour(),
+        );
+    }
+
+    /**
+     * Öffentliche IP-Adresse des Besuchers fürs Limit pro IP (unverändert aus dem Beglaubigungstool).
+     *
+     * Hinter dem Atoll-Gateway steht sie im Header X-Forwarded-For. Gelesen wird von rechts
+     * (diese Einträge setzen die eigenen Proxys, links kann der Besucher selbst etwas eintragen),
+     * interne Adressen werden übersprungen. Findet sich keine öffentliche Adresse, gilt für die
+     * Anfrage kein Limit – lieber kein Limit als alle Besucher gemeinsam zu sperren.
+     *
+     * @param array<string, mixed> $server
+     */
+    public static function clientIp(array $server): string
+    {
+        $public = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+        $forwarded = $server['HTTP_X_FORWARDED_FOR'] ?? '';
+        if (is_string($forwarded) && $forwarded !== '') {
+            foreach (array_reverse(array_map('trim', explode(',', $forwarded))) as $candidate) {
+                if (filter_var($candidate, FILTER_VALIDATE_IP, $public) !== false) {
+                    return $candidate;
+                }
+            }
+        }
+        $remote = $server['REMOTE_ADDR'] ?? '';
+
+        return is_string($remote) && filter_var($remote, FILTER_VALIDATE_IP, $public) !== false ? $remote : '';
     }
 
     private function now(): DateTimeImmutable
