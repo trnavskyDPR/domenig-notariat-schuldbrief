@@ -7,7 +7,10 @@ namespace Schuldbrief;
 use Closure;
 use DateTimeImmutable;
 use Schuldbrief\Http\Response;
+use Schuldbrief\Graph\GraphException;
+use Schuldbrief\Http\NetworkException;
 use Schuldbrief\Order\AttachmentPreparer;
+use Schuldbrief\Order\OrderService;
 use Schuldbrief\Order\OrderValidator;
 use Schuldbrief\Order\UploadValidator;
 use Schuldbrief\Security\Signer;
@@ -30,6 +33,8 @@ final class App
         private ?DateTimeImmutable $now = null,
         /** Nur für Tests: ersetzt is_uploaded_file(). */
         private ?Closure $isUploadedFile = null,
+        /** null = Mock-Modus: es wird nichts gesendet. */
+        private ?OrderService $orders = null,
     ) {
     }
 
@@ -105,10 +110,24 @@ final class App
         }
         $order = $result->order->withAttachments($attachments);
 
-        // Schritt c: Hier gehen die Mails ans Notariat (mit Ausweiskopien) und die Bestätigung an die Bank.
-        // Im Mock-Modus werden die Ausweiskopien nur geprüft und verworfen – es wird nichts gesendet.
-        unset($order);
+        // Mails ans Notariat (mit Ausweiskopien) und Bestätigung an die Bank. Die Ausweiskopien gehen
+        // NUR als Anhang der internen Mail hinaus – nicht an die Bank, nicht in Logs.
+        // Im Mock-Modus ($this->orders === null) werden sie geprüft und verworfen.
         $mailed = true;
+        if ($this->orders !== null) {
+            try {
+                $mailed = $this->orders->send($order);
+            } catch (Throwable $e) {
+                // Die interne Mail ist das einzige Ergebnis: Ohne sie ist der Antrag nicht angekommen.
+                // Formular mit allen Eingaben erneut zeigen, damit die Bank es nochmals versuchen kann.
+                error_log('Interne Mail fehlgeschlagen: ' . self::logLine($e));
+
+                return $this->form($view, $result->values, [
+                    'form' => ['error.send_failed', ['phone' => $this->config->contactPhone()]],
+                    'ausweis' => ['error.ausweis.again', []],
+                ]);
+            }
+        }
 
         // Die Bestätigungsseite erhält nur Sprache und Versandstatus – keine Antragsdaten in der URL.
         $token = (new Signer($this->config->secret()))->sign(
@@ -153,11 +172,17 @@ final class App
         return is_string($value) && $value !== '' ? $value : null;
     }
 
-    /** Log-Zeile ohne Antragsdaten: Typ und Ort, bei Einstellungsfehlern zusätzlich der Name der Einstellung. */
+    /**
+     * Log-Zeile ohne Antragsdaten: Typ und Ort, zusätzlich bei Einstellungsfehlern der Name der
+     * Einstellung, bei Graph-Fehlern HTTP-Status und Microsofts Fehlercode, bei Netzwerkfehlern die
+     * curl-Nummer. Andere Meldungen kommen nie ins Log (sie könnten Eingaben enthalten).
+     */
     public static function logLine(Throwable $e): string
     {
         $detail = match (true) {
             $e instanceof ConfigException => ' – ' . $e->getMessage(),
+            $e instanceof GraphException => ' – ' . $e->logLine(),
+            $e instanceof NetworkException => ' – ' . $e->getMessage(),
             default => '',
         };
 

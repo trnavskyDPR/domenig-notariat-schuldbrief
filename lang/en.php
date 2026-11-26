@@ -109,5 +109,25 @@ return [
     'confirm.invalid' => 'This confirmation page has expired. Your order is not affected – you have received the acknowledgement by e-mail.',
     'back' => 'Back to the order form',
 
+    'error.send_failed' => 'Unfortunately, your order could not be sent. Your details are still filled in below: please select the identity document copies again and resubmit the order in a few minutes. Or call us: {phone}',
+    'mail.files_count' => '{count} file(s)',
+
+    'mail.internal.subject' => 'Mortgage note order – {grundbuchblatt} – {adresse}',
+    'mail.internal.intro' => 'A new mortgage note order has been received via the online form.',
+    'mail.internal.betrag' => 'Amount of the mortgage note',
+    'mail.internal.name' => 'Name',
+    'mail.internal.lang' => 'Language',
+    'mail.internal.attachment_here' => 'The copies of the landowners’ identity documents are attached.',
+    'mail.internal.attachment_parts' => 'Because of their size, they are split over {total} e-mails with the same subject.',
+    'mail.internal.attachment_elsewhere' => 'The identity document copies were sent separately to {recipients}.',
+    'mail.internal.no_attachment' => 'No identity document copies were attached.',
+    'mail.internal.part' => '(part {n} of {total})',
+    'mail.internal.reply' => '“Reply” goes directly to the bank’s contact person.',
+
+    'mail.bank.subject' => 'Acknowledgement of receipt – mortgage note order – folio {grundbuchblatt}',
+    'mail.bank.greeting' => 'Dear {name}',
+    'mail.bank.intro' => 'Thank you for your mortgage note order. We hereby confirm receipt:',
+    'mail.bank.closing' => 'Kind regards',
+
     'footer.privacy' => 'Privacy',
 ];

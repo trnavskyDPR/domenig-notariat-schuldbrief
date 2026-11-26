@@ -117,5 +117,28 @@ return [
     'confirm.invalid' => 'Diese Bestätigungsseite ist abgelaufen. Ihr Antrag ist davon nicht betroffen – die Eingangsbestätigung haben Sie per E-Mail erhalten.',
     'back' => 'Zum Antragsformular',
 
+    // Versand (Schritt c)
+    'error.send_failed' => 'Ihr Antrag konnte leider nicht übermittelt werden. Ihre Angaben sind unten noch vorhanden: Bitte wählen Sie die Ausweiskopien erneut aus und senden Sie den Antrag in einigen Minuten nochmals. Oder rufen Sie uns an: {phone}',
+    'mail.files_count' => '{count} Datei(en)',
+
+    // Interne Mail ans Notariat (immer Deutsch)
+    'mail.internal.subject' => 'Schuldbriefbestellung – {grundbuchblatt} – {adresse}',
+    'mail.internal.intro' => 'Über das Online-Formular ist ein neuer Antrag auf Schuldbriefbestellung eingegangen.',
+    'mail.internal.betrag' => 'Höhe des Schuldbriefes',
+    'mail.internal.name' => 'Name',
+    'mail.internal.lang' => 'Sprache',
+    'mail.internal.attachment_here' => 'Die Ausweiskopien der Grundeigentümer sind im Anhang.',
+    'mail.internal.attachment_parts' => 'Wegen der Grösse sind sie auf {total} E-Mails mit demselben Betreff verteilt.',
+    'mail.internal.attachment_elsewhere' => 'Die Ausweiskopien wurden separat an {recipients} gesendet.',
+    'mail.internal.no_attachment' => 'Es wurden keine Ausweiskopien mitgeschickt.',
+    'mail.internal.part' => '(Teil {n} von {total})',
+    'mail.internal.reply' => '«Antworten» geht direkt an die Ansprechperson der Bank.',
+
+    // Eingangsbestätigung an die Bank
+    'mail.bank.subject' => 'Eingangsbestätigung Schuldbriefbestellung – Grundbuchblatt {grundbuchblatt}',
+    'mail.bank.greeting' => 'Guten Tag {name}',
+    'mail.bank.intro' => 'Vielen Dank für Ihren Antrag auf Schuldbriefbestellung. Wir bestätigen Ihnen den Eingang:',
+    'mail.bank.closing' => 'Freundliche Grüsse',
+
     'footer.privacy' => 'Datenschutz',
 ];

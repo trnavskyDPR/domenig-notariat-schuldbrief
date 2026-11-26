@@ -22,7 +22,7 @@ Domain: `schuldbrief.domenig.law`.
 
 ```
 public/      einziger öffentlicher Ordner (index.php, assets/)
-src/         Logik: Order/ (Antrag, Validierung, Betrag, Upload, Anhänge), Security/, Http/
+src/         Logik: Order/ (Antrag, Validierung, Betrag, Upload, Anhänge, Mailversand), Graph/, Security/, Http/
 templates/   PHP-Templates (layout, form, confirmation, message)
 lang/        de.php · fr.php · en.php – alle Texte
 tests/       PHPUnit
@@ -101,6 +101,10 @@ tests/       PHPUnit
 - [x] a) Formular, Validierung (inkl. Betrag im Schweizer Format), DE/FR/EN, Mock-Modus
 - [x] b) Upload der Ausweiskopien (bis 6 Dateien), Verkleinern grosser Fotos inkl. EXIF-Drehung,
   PHP-Grenzen im Dockerfile. Im Mock-Modus geprüft und verworfen (Versand folgt mit c)
-- [ ] c) Microsoft Graph: interne Mails (Aufteilung bei ~3 MB), Bestätigung an die Bank, Testmodus
+- [x] c) Microsoft Graph (`GraphOrderService`): interne Mail an alle drei mit Ausweiskopien (Aufteilung
+  bei ~3 MB, «Teil 1 von 2»), Bestätigung an die Bank (DE/FR/EN, nur Referenz), Testmodus mit «[TEST]»
+  ans Testpostfach. Bei Fehler der internen Mail: Formular mit Eingaben + Meldung, keine Bestätigung.
+  `ID_COPY_RECIPIENTS` ausserhalb von `INTERNAL_RECIPIENTS` = Einstellungsfehler (nie stillschweigend
+  verlieren). **Praxistest mit `APP_MODE=test` ausstehend** (wartet auf Entra-App von InfoPro).
 - [ ] d) Spamschutz (Fallenfeld, Mindest-Ausfüllzeit, Limit pro IP), README mit Betrieb,
   Schlüsselwechsel, Fehlersuche und Livegang-Checkliste

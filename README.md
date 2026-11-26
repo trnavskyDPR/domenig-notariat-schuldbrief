@@ -4,8 +4,9 @@ Online-Antrag für Schuldbriefbestellungen unter **https://schuldbrief.domenig.l
 (ersetzt das Jotform-Formular). Die Bank füllt das Formular aus; das Notariat erhält alle
 Angaben per Mail, die Bank eine Eingangsbestätigung. Das Tool speichert **keine** Antragsdaten.
 
-> Stand: Schritte a und b (Formular, Validierung, DE/FR/EN, Mock-Modus, Upload der
-> Ausweiskopien). Mailversand und Spamschutz folgen. Betrieb, Fehlersuche und
+> Stand: Schritte a–c (Formular, Validierung, DE/FR/EN, Mock-Modus, Upload der
+> Ausweiskopien, Mailversand über Microsoft Graph). Praxistest im Modus `test` folgt, sobald
+> InfoPro die Entra-App eingerichtet hat. Spamschutz, Betrieb, Fehlersuche und
 > Livegang-Checkliste kommen mit Schritt d.
 >
 > **Upload:** Entscheid des Vorgesetzten von Trevor Trnavsky noch ausstehend – ohne Entscheid
@@ -56,6 +57,14 @@ composer test
 | `CONTACT_EMAIL` | `notariat@domenig.law` | Kontaktadresse |
 | `OFFICE_ADDRESS` | `Laupenstrasse 1, 3008 Bern` | Adresse in der Fusszeile |
 | `PRIVACY_URL_DE` / `_FR` / `_EN` | `https://www.domenig.law/datenschutz` | Datenschutzerklärung je Sprache, leer = deutsche Fassung |
+| `GRAPH_TENANT_ID` | – | Verzeichnis-ID (Mandant) von Entra ID. In `test`/`live` Pflicht |
+| `GRAPH_CLIENT_ID` | – | Anwendungs-ID der App «Schuldbriefbestellung (Atoll)». In `test`/`live` Pflicht |
+| `GRAPH_CLIENT_SECRET` | – | **Geheim.** Clientschlüssel der App (LastPass). Nur in Atoll bzw. der Server-`.env`, nie im Git. Läuft nach 24 Monaten ab |
+| `TEST_MAILBOX` | `test-notariat@domenig.law` | Im Modus `test` Absender **und** Empfänger aller Mails |
+| `GRAPH_TIMEOUT_SECONDS` | `10` | Wartezeit auf Microsoft |
+| `SENDER_MAILBOX` | `notariat@domenig.law` | Absender aller Mails (im Modus `test`: `TEST_MAILBOX`) |
+| `INTERNAL_RECIPIENTS` | `info@…,notariat@…,schneider@…` | Wer bei jedem Antrag eine Mail erhält, je ein eigenes Exemplar (im Modus `test`: nur `TEST_MAILBOX`) |
+| `ID_COPY_RECIPIENTS` | `info@…,notariat@…,schneider@…` | Wer davon die Ausweiskopien als Anhang erhält. Muss in `INTERNAL_RECIPIENTS` stehen. Die übrigen erhalten die Mail ohne Anhang |
 
 ## Formular
 
@@ -71,6 +80,39 @@ composer test
 | Datenschutz | Häkchen Pflicht, Link auf `PRIVACY_URL_*` |
 
 Vor dem Absenden steht der Hinweis zu den Gebühren (Text in `lang/*.php`, Schlüssel `fees.text`).
+
+## Was beim Absenden passiert (Modus `test` und `live`)
+
+1. Alle Eingaben und Dateien werden geprüft (siehe Formular und Upload).
+2. **Interne Mail** von `SENDER_MAILBOX` an `INTERNAL_RECIPIENTS` (info@, notariat@, schneider@),
+   Betreff «Schuldbriefbestellung – <Grundbuchblatt-Nr.> – <Adresse Grundstück>», mit allen Angaben
+   und den Ausweiskopien. «Antworten» geht direkt an die Ansprechperson der Bank. Sind die Anhänge
+   zusammen grösser als die Graph-Grenze, kommen mehrere Mails mit «(Teil 1 von 2)» usw.
+3. **Eingangsbestätigung an die Bank** in ihrer Sprache (DE/FR/EN), ohne Anhänge. Inhalt: Grundbuchblatt-Nr.
+   und Adresse als Referenz, Anzahl Ausweiskopien, Gebührenhinweis, Kontakt. Kein Betrag, keine
+   Bankangaben (falls die E-Mail-Adresse vertippt ist). «Antworten» geht an `CONTACT_EMAIL`.
+4. **Bestätigungsseite** ohne Antragsdaten.
+
+**Die interne Mail ist das einzige Ergebnis** (keine Datenbank, kein Kalender). Schlägt sie fehl,
+sieht die Bank das Formular mit allen Eingaben wieder, eine Meldung «konnte leider nicht übermittelt
+werden» mit Telefonnummer, und es geht **keine** Bestätigung hinaus. Werden die Ausweiskopien auf
+mehrere Mails verteilt und bricht der Versand mittendrin ab, können nach erneutem Absenden einzelne
+Teile doppelt ankommen. Schlägt nur die Bestätigung fehl, ist der Antrag trotzdem angekommen; die
+Bestätigungsseite sagt der Bank, dass keine Mail kam.
+
+Alle Mails werden mit `saveToSentItems=false` gesendet: keine zusätzliche Kopie in «Gesendete
+Elemente». Im Modus `test` gehen **alle** Mails ans Testpostfach (auch die Bestätigung) und die
+Betreffs beginnen mit «[TEST]».
+
+### Microsoft Graph
+
+- Eigene Entra-App «Schuldbriefbestellung (Atoll)», eingerichtet durch InfoPro. In Entra **keine**
+  API-Berechtigungen.
+- Die Rechte vergibt Exchange Online über «RBAC for Applications»: nur die Rolle
+  `Application Mail.Send`, beschränkt auf den Management Scope «Schuldbriefbestellung Postfaecher»
+  (notariat@, test-notariat@). **Keine** Kalenderrechte. Empfänger (info@, schneider@) müssen nicht
+  im Scope sein.
+- Die App kann nur Mails senden – keine Postfächer lesen.
 
 ## Upload der Ausweiskopien
 
@@ -111,9 +153,12 @@ public/      einziger öffentlicher Ordner
 src/
   App.php            Controller (Formular, Absenden, Bestätigung)
   Config.php         Einstellungen aus Umgebungsvariablen
-  Order/             Antrag, Validierung, Betrag (Schweizer Format), Upload, Anhänge verkleinern
+  ServiceFactory.php wählt je nach APP_MODE: nichts senden (mock) oder Graph (test/live)
+  Order/             Antrag, Validierung, Betrag (Schweizer Format), Upload, Anhänge verkleinern,
+                     Mailversand (GraphOrderService)
+  Graph/             GraphClient (Anmeldung, Wiederholung bei 429/503), GraphException
   Security/          Signer (signierte Links)
-  Http/              Response mit Sicherheits-Headern (CSP), Health
+  Http/              Response mit Sicherheits-Headern (CSP), curl-Client, Health
 templates/   HTML-Templates
 lang/        Texte DE / FR / EN
 tests/       PHPUnit

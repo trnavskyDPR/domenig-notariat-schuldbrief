@@ -9,7 +9,10 @@ use DateTimeZone;
 use PHPUnit\Framework\TestCase;
 use Schuldbrief\App;
 use Schuldbrief\Config;
+use Schuldbrief\Graph\GraphException;
 use Schuldbrief\Http\Response;
+use Schuldbrief\Order\Order;
+use Schuldbrief\Order\OrderService;
 
 /** Durchstich durch Controller und Templates im Mock-Modus. */
 final class AppTest extends TestCase
@@ -214,6 +217,78 @@ final class AppTest extends TestCase
             self::assertFileDoesNotExist($tmp, 'nichts bleibt auf dem Server liegen');
         }
         self::assertStringNotContainsString('ausweis', (string) $response->header('Location'), 'keine Datei- oder Antragsdaten in der Weiterleitung');
+    }
+
+    /** Simulierter Versand: merkt sich den Antrag, kann scheitern oder die Bestätigung verlieren. */
+    private static function orders(string $outcome = 'ok'): OrderService
+    {
+        return new class ($outcome) implements OrderService {
+            public ?Order $sent = null;
+
+            public function __construct(private string $outcome)
+            {
+            }
+
+            public function send(Order $order): bool
+            {
+                if ($this->outcome === 'fail') {
+                    throw new GraphException('Graph-Anfrage fehlgeschlagen', 403, 'ErrorAccessDenied');
+                }
+                $this->sent = $order;
+
+                return $this->outcome !== 'bank_failed';
+            }
+        };
+    }
+
+    private static function liveApp(OrderService $orders): App
+    {
+        return new App(Config::fromArray(['APP_MODE' => 'live', 'APP_SECRET' => str_repeat('x', 32)]), APP_ROOT, self::now(),
+            static fn (string $tmp): bool => true, $orders);
+    }
+
+    public function testValidOrderIsSentWithAttachments(): void
+    {
+        $orders = self::orders();
+        $files = UploadFixtures::files([UploadFixtures::png(), UploadFixtures::pdf()]);
+        $response = self::submit(self::validPost(['lang' => 'fr']), self::liveApp($orders), $files);
+        self::assertSame(303, $response->status);
+        self::assertSame('Bern 4/1234', $orders->sent->grundbuchblatt);
+        self::assertSame(1250000, $orders->sent->betrag);
+        self::assertSame('fr', $orders->sent->lang);
+        self::assertSame(['ausweis-1.png', 'ausweis-2.pdf'], array_map(static fn ($a) => $a->filename, $orders->sent->attachments));
+
+        parse_str(substr((string) $response->header('Location'), 1), $get);
+        $page = self::liveApp($orders)->handle('GET', $get, []);
+        self::assertStringContainsString('Nous vous avons envoyé un accusé de réception', $page->body);
+    }
+
+    public function testFailedSendShowsFormAgainWithInputAndPhone(): void
+    {
+        $log = ini_set('error_log', '/dev/null');
+        $response = self::submit(self::validPost(), self::liveApp(self::orders('fail')));
+        ini_set('error_log', (string) $log);
+        self::assertSame(200, $response->status);
+        self::assertStringContainsString('Ihr Antrag konnte leider nicht übermittelt werden', $response->body);
+        self::assertStringContainsString('+41 58 531 20 00', $response->body);
+        self::assertStringContainsString('value="Bern 4/1234"', $response->body, 'Eingaben bleiben erhalten');
+        self::assertStringContainsString('href="#f-form"', $response->body);
+        self::assertStringContainsString('Bitte wählen Sie die Dateien erneut aus', $response->body);
+    }
+
+    public function testFailedConfirmationMailIsShownOnConfirmationPage(): void
+    {
+        $response = self::submit(self::validPost(), self::liveApp(self::orders('bank_failed')));
+        self::assertSame(303, $response->status);
+        parse_str(substr((string) $response->header('Location'), 1), $get);
+        $page = self::liveApp(self::orders())->handle('GET', $get, []);
+        self::assertStringContainsString('Eingangsbestätigung per E-Mail konnte leider nicht versendet werden', $page->body);
+    }
+
+    public function testMockModeSendsNothing(): void
+    {
+        // Im Mock-Modus gibt es keinen OrderService: index.php übergibt null.
+        self::assertNull(\Schuldbrief\ServiceFactory::orders(Config::fromArray(['APP_MODE' => 'mock']), APP_ROOT));
     }
 
     public function testForgedConfirmationIsRejected(): void

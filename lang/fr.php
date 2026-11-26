@@ -110,5 +110,25 @@ return [
     'confirm.invalid' => "Cette page de confirmation a expiré. Votre demande n’est pas concernée\u{a0}: vous avez reçu l’accusé de réception par e-mail.",
     'back' => 'Retour au formulaire',
 
+    'error.send_failed' => "Votre demande n’a malheureusement pas pu être transmise. Vos indications sont toujours présentes ci-dessous\u{a0}: veuillez sélectionner à nouveau les copies des pièces d’identité et renvoyer la demande dans quelques minutes. Ou appelez-nous au {phone}.",
+    'mail.files_count' => '{count} fichier(s)',
+
+    'mail.internal.subject' => 'Commande de cédule hypothécaire – {grundbuchblatt} – {adresse}',
+    'mail.internal.intro' => 'Une nouvelle demande de cédule hypothécaire a été reçue via le formulaire en ligne.',
+    'mail.internal.betrag' => 'Montant de la cédule hypothécaire',
+    'mail.internal.name' => 'Nom',
+    'mail.internal.lang' => 'Langue',
+    'mail.internal.attachment_here' => 'Les copies des pièces d’identité des propriétaires fonciers sont en annexe.',
+    'mail.internal.attachment_parts' => 'En raison de leur taille, elles sont réparties sur {total} e-mails portant le même objet.',
+    'mail.internal.attachment_elsewhere' => 'Les copies des pièces d’identité ont été envoyées séparément à {recipients}.',
+    'mail.internal.no_attachment' => 'Aucune copie de pièce d’identité n’a été jointe.',
+    'mail.internal.part' => '(partie {n} sur {total})',
+    'mail.internal.reply' => "«\u{a0}Répondre\u{a0}» s’adresse directement à la personne de contact de la banque.",
+
+    'mail.bank.subject' => 'Accusé de réception – commande de cédule hypothécaire – feuillet {grundbuchblatt}',
+    'mail.bank.greeting' => 'Bonjour {name}',
+    'mail.bank.intro' => "Nous vous remercions de votre demande de cédule hypothécaire et vous en confirmons la réception\u{a0}:",
+    'mail.bank.closing' => 'Meilleures salutations',
+
     'footer.privacy' => 'Protection des données',
 ];

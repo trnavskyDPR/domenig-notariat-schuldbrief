@@ -24,6 +24,11 @@ final class Config
         'CONTACT_EMAIL' => 'notariat@domenig.law',
         'OFFICE_ADDRESS' => 'Laupenstrasse 1, 3008 Bern',
         'PRIVACY_URL_DE' => 'https://www.domenig.law/datenschutz',
+        'TEST_MAILBOX' => 'test-notariat@domenig.law',
+        'GRAPH_TIMEOUT_SECONDS' => '10',
+        'SENDER_MAILBOX' => 'notariat@domenig.law',
+        'INTERNAL_RECIPIENTS' => 'info@domenig.law,notariat@domenig.law,schneider@domenig.law',
+        'ID_COPY_RECIPIENTS' => 'info@domenig.law,notariat@domenig.law,schneider@domenig.law',
     ];
 
     /** @param array<string, string> $vars */
@@ -97,6 +102,71 @@ final class Config
         return max(1, $this->int('UPLOAD_MAX_FILES'));
     }
 
+    /**
+     * Zugangsdaten der Entra-ID-App «Schuldbriefbestellung (Atoll)». Der geheime Schlüssel kommt
+     * nur aus der Umgebung (Atoll-Variablen bzw. .env auf dem Server) – nie aus dem Code.
+     *
+     * @return array{0: string, 1: string, 2: string} Tenant-ID, Client-ID, Client-Secret
+     */
+    public function graphCredentials(): array
+    {
+        $tenant = $this->get('GRAPH_TENANT_ID');
+        $client = $this->get('GRAPH_CLIENT_ID');
+        $secret = $this->get('GRAPH_CLIENT_SECRET');
+        $guid = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+        if (!preg_match($guid, $tenant) || !preg_match($guid, $client) || $secret === '') {
+            throw new ConfigException('GRAPH_TENANT_ID, GRAPH_CLIENT_ID und GRAPH_CLIENT_SECRET müssen gesetzt sein.');
+        }
+
+        return [$tenant, $client, $secret];
+    }
+
+    /** Wartezeit auf Microsoft in Sekunden (3–30). */
+    public function graphTimeout(): int
+    {
+        return max(3, min(30, $this->int('GRAPH_TIMEOUT_SECONDS')));
+    }
+
+    /** Absender aller Mails. Im Testmodus das Testpostfach. */
+    public function senderMailbox(): string
+    {
+        $key = $this->mode() === 'test' ? 'TEST_MAILBOX' : 'SENDER_MAILBOX';
+        $mailbox = $this->get($key);
+        if (filter_var($mailbox, FILTER_VALIDATE_EMAIL) === false) {
+            throw new ConfigException($key . ' ist keine gültige Adresse.');
+        }
+
+        return $mailbox;
+    }
+
+    /**
+     * Wer bei jedem Antrag eine Mail erhält – jede Adresse ein eigenes Exemplar im eigenen Posteingang.
+     * Im Testmodus nur das Testpostfach.
+     *
+     * @return list<string>
+     */
+    public function internalRecipients(): array
+    {
+        return $this->mode() === 'test' ? [$this->get('TEST_MAILBOX')] : $this->addresses('INTERNAL_RECIPIENTS');
+    }
+
+    /**
+     * Wer davon die Ausweiskopien als Anhang erhält (Teilmenge von INTERNAL_RECIPIENTS).
+     * Standard: alle drei (Entscheid Trevor Trnavsky, 26.11.2026).
+     *
+     * @return list<string>
+     */
+    public function idCopyRecipients(): array
+    {
+        return $this->mode() === 'test' ? [$this->get('TEST_MAILBOX')] : $this->addresses('ID_COPY_RECIPIENTS');
+    }
+
+    /** Empfänger der Eingangsbestätigung: die Bank – im Testmodus stattdessen das Testpostfach. */
+    public function bankRecipient(string $bankEmail): string
+    {
+        return $this->mode() === 'test' ? $this->get('TEST_MAILBOX') : $bankEmail;
+    }
+
     public function contactPhone(): string
     {
         return $this->get('CONTACT_PHONE');
@@ -118,6 +188,22 @@ final class Config
         $url = $this->get('PRIVACY_URL_' . strtoupper($lang));
 
         return $url !== '' ? $url : $this->get('PRIVACY_URL_DE');
+    }
+
+    /** Kommagetrennte Adressliste, klein geschrieben und ohne Doppel. @return list<string> */
+    private function addresses(string $key): array
+    {
+        $list = array_values(array_unique(array_filter(array_map('trim', explode(',', strtolower($this->get($key)))))));
+        foreach ($list as $mail) {
+            if (filter_var($mail, FILTER_VALIDATE_EMAIL) === false) {
+                throw new ConfigException($key . ' enthält eine ungültige Adresse.');
+            }
+        }
+        if ($list === []) {
+            throw new ConfigException($key . ' ist leer.');
+        }
+
+        return $list;
     }
 
     private function int(string $key): int
