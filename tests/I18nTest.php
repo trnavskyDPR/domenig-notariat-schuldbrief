@@ -68,6 +68,16 @@ final class I18nTest extends TestCase
         }
     }
 
+    /** «\\u{a0}» wirkt nur in doppelten Anführungszeichen – in einfachen stünde es wörtlich im Text. */
+    public function testNoLiteralUnicodeEscapes(): void
+    {
+        foreach (I18n::LANGS as $lang) {
+            foreach (require self::DIR . '/' . $lang . '.php' as $key => $value) {
+                self::assertStringNotContainsString('\\u{', (string) (is_string($value) ? $value : ''), $lang . ': ' . $key);
+            }
+        }
+    }
+
     public function testPick(): void
     {
         self::assertSame('fr', I18n::pick('FR'));

@@ -16,7 +16,7 @@ final class OrderValidator
     /** Reihenfolge wie im Formular – bestimmt auch die Fehlerübersicht. */
     public const FIELDS = [
         'grundbuchblatt', 'adresse', 'rang', 'betrag', 'glaeubigerin', 'bank',
-        'vorname', 'nachname', 'email', 'vorwahl', 'telefon', 'datenschutz',
+        'vorname', 'nachname', 'email', 'vorwahl', 'telefon', 'ausweis', 'datenschutz',
     ];
 
     /** Höchstlänge der Textfelder. Vorwahl und Checkbox werden gegen feste Werte geprüft. */
@@ -38,10 +38,16 @@ final class OrderValidator
     /** @var array<string, array{0: string, 1: array<string, string|int>}> */
     private array $errors = [];
 
+    /** @param UploadValidator|null $uploads null = keine Ausweiskopien prüfen (nur für Tests der übrigen Felder) */
+    public function __construct(private ?UploadValidator $uploads = null)
+    {
+    }
+
     /**
      * @param array<string, mixed> $input $_POST
+     * @param array<string, mixed> $files $_FILES
      */
-    public function validate(array $input, string $lang): ValidationResult
+    public function validate(array $input, string $lang, array $files = []): ValidationResult
     {
         $this->errors = [];
         $v = self::cleanValues($input);
@@ -65,8 +71,21 @@ final class OrderValidator
         $this->checkPattern($v, 'nachname', self::NAME);
         $this->checkEmail($v['email']);
         $telefon = $this->checkPhone($v['vorwahl'], $v['telefon']);
+        $attachments = [];
+        if ($this->uploads !== null) {
+            [$attachments, $uploadError] = $this->uploads->check($files['ausweis'] ?? null);
+            if ($uploadError !== null) {
+                $this->error('ausweis', $uploadError[0], $uploadError[1]);
+            }
+        }
         if ($v['datenschutz'] !== '1') {
             $this->error('datenschutz', 'error.datenschutz.required');
+        }
+
+        // Ein Browser kann Dateien nicht selbst wieder ins Formular einsetzen. Gibt es andere Fehler,
+        // müssen die (an sich gültigen) Dateien erneut gewählt werden – wir speichern sie nicht zwischen.
+        if ($attachments !== [] && $this->errors !== []) {
+            $this->error('ausweis', 'error.ausweis.again');
         }
 
         $errors = $this->sortedErrors();
@@ -86,6 +105,7 @@ final class OrderValidator
             email: $v['email'],
             telefon: $telefon,
             lang: $lang,
+            attachments: $attachments,
         ));
     }
 
@@ -99,6 +119,9 @@ final class OrderValidator
     {
         $values = [];
         foreach (self::FIELDS as $field) {
+            if ($field === 'ausweis') {
+                continue; // Datei, kein Textfeld: kommt aus $_FILES und wird nie zum erneuten Anzeigen aufbewahrt.
+            }
             $raw = $input[$field] ?? '';
             $values[$field] = is_string($raw) ? self::clean($raw) : '';
         }

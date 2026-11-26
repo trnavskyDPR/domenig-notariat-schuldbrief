@@ -18,6 +18,8 @@ final class Config
 
     private const DEFAULTS = [
         'APP_MODE' => 'mock',
+        'UPLOAD_MAX_MB' => '5',
+        'UPLOAD_MAX_FILES' => '6',
         'CONTACT_PHONE' => '+41 58 531 20 00',
         'CONTACT_EMAIL' => 'notariat@domenig.law',
         'OFFICE_ADDRESS' => 'Laupenstrasse 1, 3008 Bern',
@@ -83,6 +85,18 @@ final class Config
         return $secret;
     }
 
+    /** Höchste Grösse pro hochgeladener Datei (Ausweiskopie) in Bytes. */
+    public function uploadMaxBytes(): int
+    {
+        return max(1, $this->int('UPLOAD_MAX_MB')) * 1048576;
+    }
+
+    /** Höchste Anzahl Dateien (mehrere Grundeigentümer, je Vorder- und Rückseite). */
+    public function uploadMaxFiles(): int
+    {
+        return max(1, $this->int('UPLOAD_MAX_FILES'));
+    }
+
     public function contactPhone(): string
     {
         return $this->get('CONTACT_PHONE');
@@ -104,5 +118,15 @@ final class Config
         $url = $this->get('PRIVACY_URL_' . strtoupper($lang));
 
         return $url !== '' ? $url : $this->get('PRIVACY_URL_DE');
+    }
+
+    private function int(string $key): int
+    {
+        $value = $this->get($key);
+        if (!preg_match('/^\d+$/', $value)) {
+            throw new ConfigException($key . ' muss eine ganze Zahl sein.');
+        }
+
+        return (int) $value;
     }
 }

@@ -46,6 +46,12 @@ return [
     'field.telefon.number' => 'Nummer',
     'field.telefon.hint' => 'Zum Beispiel 031 123 45 67. Bei «Andere» bitte mit Ländervorwahl, zum Beispiel +34 612 34 56 78.',
 
+    // Ausweiskopien der Grundeigentümer
+    'section.ausweis' => 'Ausweiskopien',
+    'field.ausweis' => 'Ausweiskopien der Grundeigentümer',
+    'field.ausweis.hint' => 'Bitte laden Sie gut lesbare Kopien von Pass oder ID aller Grundeigentümerinnen und Grundeigentümer hoch, bei einer ID-Karte Vorder- und Rückseite. Mehrere Dateien wählen Sie im selben Dialog gemeinsam aus. Erlaubt sind höchstens {files} Dateien: Fotos als JPG oder PNG (je bis {max} MB) oder PDF (je bis {pdfmax} MB, am besten ein PDF pro Person). Fotos im iPhone-Format HEIC werden nicht angenommen.',
+    'field.ausweis.privacy' => 'Die Dateien werden bei uns nicht gespeichert. Sie werden nur zusammen mit Ihrem Antrag per E-Mail an das Notariat übermittelt.',
+
     // Gebühren (Text vom Notariat vorgegeben)
     'fees.heading' => 'Hinweise zu den Gebühren',
     'fees.text' => 'Unsere Gebühren betragen zwischen CHF 1\'000.- und 1\'500.-. Dazu kommen noch die Gebühren vom Grundbuchamt im Umfang von ca. CHF 150.00 (abhängig von den konkreten Eintragungen).',
@@ -83,6 +89,15 @@ return [
     'error.telefon.required' => 'Bitte geben Sie die Telefonnummer der Ansprechperson ein.',
     'error.telefon.invalid' => 'Bitte geben Sie eine gültige Telefonnummer ein, zum Beispiel 031 123 45 67.',
     'error.telefon.needs_code' => 'Bitte geben Sie die Nummer mit Ländervorwahl ein, zum Beispiel +34 612 34 56 78.',
+    'error.ausweis.required' => 'Bitte laden Sie die Ausweiskopien der Grundeigentümer hoch.',
+    'error.ausweis.too_many' => 'Bitte laden Sie höchstens {max} Dateien hoch.',
+    'error.ausweis.too_big' => 'Eine Datei ist zu gross (höchstens {max} MB pro Datei).',
+    'error.ausweis.too_big_mail' => 'Eine Datei ist zu gross für den Versand (höchstens {max} MB). Bitte laden Sie kleinere PDFs hoch, zum Beispiel ein PDF pro Person, oder Fotos.',
+    'error.ausweis.type' => 'Dieses Dateiformat wird nicht angenommen. Erlaubt sind JPG, PNG und PDF.',
+    'error.ausweis.invalid' => 'Eine Datei ist leer oder beschädigt. Bitte wählen Sie sie erneut aus.',
+    'error.ausweis.failed' => 'Eine Datei konnte nicht übertragen werden. Bitte versuchen Sie es erneut.',
+    'error.ausweis.again' => 'Bitte wählen Sie die Dateien erneut aus. Aus Datenschutzgründen merkt sich das Formular sie nicht.',
+    'error.ausweis.post_too_big' => 'Die Dateien sind insgesamt zu gross. Bitte füllen Sie das Formular erneut aus und wählen Sie kleinere Dateien (höchstens {max} MB pro Datei).',
     'error.datenschutz.required' => 'Bitte bestätigen Sie, dass Sie die Datenschutzerklärung gelesen haben.',
     'error.generic.title' => 'Es ist ein Fehler aufgetreten',
     'error.generic' => 'Ihr Antrag konnte nicht verarbeitet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an: {phone}',

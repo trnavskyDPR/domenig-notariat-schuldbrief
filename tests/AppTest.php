@@ -21,12 +21,14 @@ final class AppTest extends TestCase
 
     private static function app(array $config = ['APP_MODE' => 'mock']): App
     {
-        return new App(Config::fromArray($config), APP_ROOT, self::now());
+        // Tests: temporäre Testdateien gelten als echter Upload.
+        return new App(Config::fromArray($config), APP_ROOT, self::now(), static fn (string $tmp): bool => true);
     }
 
-    private static function submit(array $post, ?App $app = null): Response
+    /** Absenden wie der Browser: Felder plus eine Ausweiskopie (1×1-PNG), sofern nicht anders angegeben. */
+    private static function submit(array $post, ?App $app = null, ?array $files = null): Response
     {
-        return ($app ?? self::app())->handle('POST', [], $post);
+        return ($app ?? self::app())->handle('POST', [], $post, ['ausweis' => $files ?? UploadFixtures::files([UploadFixtures::png()])]);
     }
 
     private static function validPost(array $override = []): array
@@ -52,6 +54,7 @@ final class AppTest extends TestCase
             self::assertMatchesRegularExpression('/<label[^>]* for="f-' . $field . '"/', $body, $field);
             self::assertStringContainsString('id="f-' . $field . '" name="' . $field . '"', $body, $field);
         }
+        self::assertStringContainsString('<label for="f-ausweis">', $body);
         self::assertStringContainsString('novalidate', $body, 'Prüfung nur auf dem Server');
         self::assertStringNotContainsString('name="slot"', $body);
     }
@@ -127,6 +130,90 @@ final class AppTest extends TestCase
         self::assertStringContainsString('Test mode: nothing was transmitted', $page->body);
         self::assertStringContainsString('Notes on fees', $page->body);
         self::assertStringContainsString('noindex', $page->body);
+    }
+
+    public function testFormHasMultiFileUploadWithLabelAndHints(): void
+    {
+        foreach (['de', 'fr', 'en'] as $lang) {
+            $body = self::app()->handle('GET', ['lang' => $lang], [])->body;
+            self::assertStringContainsString('enctype="multipart/form-data"', $body, $lang);
+            self::assertMatchesRegularExpression('/<input type="file" id="f-ausweis" name="ausweis\[\]" multiple required/', $body, $lang);
+            self::assertStringContainsString('aria-describedby="hint-ausweis hint-ausweis-privacy"', $body, $lang);
+        }
+        $de = self::app()->handle('GET', ['lang' => 'de'], [])->body;
+        self::assertStringContainsString('höchstens 6 Dateien: Fotos als JPG oder PNG (je bis 5 MB) oder PDF (je bis 2 MB', $de, 'Grenzen stammen aus der Konfiguration');
+        $custom = self::app(['APP_MODE' => 'mock', 'UPLOAD_MAX_FILES' => '8'])->handle('GET', [], [])->body;
+        self::assertStringContainsString('höchstens 8 Dateien', $custom);
+    }
+
+    public function testSubmitWithoutFileShowsUploadError(): void
+    {
+        $response = self::app()->handle('POST', [], self::validPost(), []);
+        self::assertSame(200, $response->status);
+        self::assertStringContainsString('Bitte laden Sie die Ausweiskopien der Grundeigentümer hoch.', $response->body);
+        self::assertStringContainsString('href="#f-ausweis"', $response->body, 'Fehlerübersicht verlinkt das Feld');
+        self::assertStringContainsString('aria-describedby="hint-ausweis hint-ausweis-privacy err-ausweis" aria-invalid="true"', $response->body);
+    }
+
+    public function testWrongFileTypeIsRejected(): void
+    {
+        $response = self::submit(self::validPost(), null, UploadFixtures::files(['<html>kein Bild</html>']));
+        self::assertSame(200, $response->status);
+        self::assertStringContainsString('Dieses Dateiformat wird nicht angenommen', $response->body);
+    }
+
+    public function testOtherErrorsAskToSelectTheFilesAgain(): void
+    {
+        // Gültige Datei, aber ungültige E-Mail: Browser können Dateien nicht wieder einsetzen.
+        $response = self::submit(self::validPost(['email' => 'kaputt']));
+        self::assertStringContainsString('Bitte wählen Sie die Dateien erneut aus', $response->body);
+        self::assertStringContainsString('id="error-summary"', $response->body);
+    }
+
+    public function testSeveralOwnersWithSixFilesAreAccepted(): void
+    {
+        $files = UploadFixtures::files([
+            UploadFixtures::png(), UploadFixtures::jpeg(), UploadFixtures::pdf(),
+            UploadFixtures::png(), UploadFixtures::jpeg(), UploadFixtures::pdf(),
+        ]);
+        self::assertSame(303, self::submit(self::validPost(), null, $files)->status);
+    }
+
+    public function testSevenFilesAreTooMany(): void
+    {
+        $files = UploadFixtures::files(array_fill(0, 7, UploadFixtures::png()));
+        $response = self::submit(self::validPost(), null, $files);
+        self::assertStringContainsString('Bitte laden Sie höchstens 6 Dateien hoch.', $response->body);
+        foreach ($files['tmp_name'] as $tmp) {
+            self::assertFileDoesNotExist($tmp, 'auch abgelehnte Dateien bleiben nicht liegen');
+        }
+    }
+
+    public function testPdfTooBigForMailIsRejectedBeforeSending(): void
+    {
+        $response = self::submit(self::validPost(), null, UploadFixtures::files(['%PDF-1.4' . str_repeat('x', 3_000_000)]));
+        self::assertSame(200, $response->status);
+        self::assertStringContainsString('Eine Datei ist zu gross für den Versand (höchstens 2 MB)', $response->body);
+    }
+
+    public function testRequestLargerThanPostMaxSizeShowsClearError(): void
+    {
+        // PHP verwirft dann Felder und Dateien; index.php meldet das als bodyTooLarge.
+        $response = self::app()->handle('POST', [], [], [], true);
+        self::assertSame(200, $response->status);
+        self::assertStringContainsString('Die Dateien sind insgesamt zu gross', $response->body);
+        self::assertStringContainsString('höchstens 5 MB pro Datei', $response->body);
+    }
+
+    public function testUploadIsCheckedAndDiscardedInMockMode(): void
+    {
+        $files = UploadFixtures::files([UploadFixtures::png(), UploadFixtures::pdf()]);
+        $response = self::submit(self::validPost(), null, $files);
+        self::assertSame(303, $response->status);
+        foreach ($files['tmp_name'] as $tmp) {
+            self::assertFileDoesNotExist($tmp, 'nichts bleibt auf dem Server liegen');
+        }
+        self::assertStringNotContainsString('ausweis', (string) $response->header('Location'), 'keine Datei- oder Antragsdaten in der Weiterleitung');
     }
 
     public function testForgedConfirmationIsRejected(): void

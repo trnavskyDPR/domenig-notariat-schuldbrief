@@ -42,6 +42,11 @@ return [
     'field.telefon.number' => 'Number',
     'field.telefon.hint' => 'For example 031 123 45 67. For “Other”, please include the country code, for example +34 612 34 56 78.',
 
+    'section.ausweis' => 'Identity document copies',
+    'field.ausweis' => 'Copies of the landowners’ identity documents',
+    'field.ausweis.hint' => 'Please upload clearly legible copies of the passport or ID card of all landowners, front and back for an ID card. Select several files together in the same dialogue. A maximum of {files} files is allowed: photos as JPG or PNG (up to {max} MB each) or PDF (up to {pdfmax} MB each, ideally one PDF per person). Photos in the iPhone HEIC format are not accepted.',
+    'field.ausweis.privacy' => 'The files are not stored by us. They are only sent by e-mail to the notary’s office together with your order.',
+
     'fees.heading' => 'Notes on fees',
     'fees.text' => "Our fees range between CHF 1'000.- and 1'500.-. In addition, the land registry charges fees of approx. CHF 150.00 (depending on the specific entries).",
 
@@ -77,6 +82,15 @@ return [
     'error.telefon.required' => 'Please enter the phone number of the contact person.',
     'error.telefon.invalid' => 'Please enter a valid phone number, for example 031 123 45 67.',
     'error.telefon.needs_code' => 'Please enter the number including the country code, for example +34 612 34 56 78.',
+    'error.ausweis.required' => 'Please upload the copies of the landowners’ identity documents.',
+    'error.ausweis.too_many' => 'Please upload no more than {max} files.',
+    'error.ausweis.too_big' => 'A file is too large (maximum {max} MB per file).',
+    'error.ausweis.too_big_mail' => 'A file is too large to be sent (maximum {max} MB). Please upload smaller PDFs, for example one PDF per person, or photos.',
+    'error.ausweis.type' => 'This file format is not accepted. Allowed formats are JPG, PNG and PDF.',
+    'error.ausweis.invalid' => 'A file is empty or damaged. Please select it again.',
+    'error.ausweis.failed' => 'A file could not be transferred. Please try again.',
+    'error.ausweis.again' => 'Please select the files again. For data protection reasons, the form does not keep them.',
+    'error.ausweis.post_too_big' => 'The files are too large in total. Please fill in the form again and choose smaller files (maximum {max} MB per file).',
     'error.datenschutz.required' => 'Please confirm that you have read the privacy policy.',
     'error.generic.title' => 'An error has occurred',
     'error.generic' => 'Your order could not be processed. Please try again later or call us: {phone}',

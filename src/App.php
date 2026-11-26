@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Schuldbrief;
 
+use Closure;
 use DateTimeImmutable;
 use Schuldbrief\Http\Response;
+use Schuldbrief\Order\AttachmentPreparer;
 use Schuldbrief\Order\OrderValidator;
+use Schuldbrief\Order\UploadValidator;
 use Schuldbrief\Security\Signer;
 use Throwable;
 
 /**
  * Einziger Controller. Routen über Query-Parameter, damit es ohne Rewrite-Regeln läuft:
  *   GET  ?lang=de                  Formular
- *   POST ?lang=de                  Antrag absenden
+ *   POST ?lang=de                  Antrag absenden (multipart: inkl. Ausweiskopien)
  *   GET  ?view=confirmed&t=…       Bestätigung (signiertes Token, keine Antragsdaten)
  */
 final class App
@@ -25,14 +28,18 @@ final class App
         private Config $config,
         private string $root,
         private ?DateTimeImmutable $now = null,
+        /** Nur für Tests: ersetzt is_uploaded_file(). */
+        private ?Closure $isUploadedFile = null,
     ) {
     }
 
     /**
      * @param array<string, mixed> $get
      * @param array<string, mixed> $post
+     * @param array<string, mixed> $files        $_FILES
+     * @param bool                 $bodyTooLarge true, wenn PHP die ganze Anfrage verworfen hat (post_max_size überschritten)
      */
-    public function handle(string $method, array $get, array $post): Response
+    public function handle(string $method, array $get, array $post, array $files = [], bool $bodyTooLarge = false): Response
     {
         $lang = I18n::pick($method === 'POST' ? ($post['lang'] ?? $get['lang'] ?? null) : ($get['lang'] ?? null));
         $i18n = new I18n($lang, $this->root . '/lang');
@@ -42,7 +49,10 @@ final class App
             $page = is_string($get['view'] ?? null) ? $get['view'] : '';
 
             return match (true) {
-                $method === 'POST' => $this->submit($post, $i18n, $view),
+                $method === 'POST' && $bodyTooLarge => $this->form($view, [], [
+                    'ausweis' => ['error.ausweis.post_too_big', ['max' => (int) ceil($this->config->uploadMaxBytes() / 1048576)]],
+                ]),
+                $method === 'POST' => $this->submit($post, $files, $i18n, $view),
                 !in_array($method, ['GET', 'HEAD'], true) => Response::html(
                     $view->page('message', ['title' => 'error.method', 'text' => 'error.method', 'noindex' => true]),
                     405,
@@ -75,17 +85,29 @@ final class App
         ]));
     }
 
-    /** @param array<string, mixed> $post */
-    private function submit(array $post, I18n $i18n, View $view): Response
+    /**
+     * @param array<string, mixed> $post
+     * @param array<string, mixed> $files
+     */
+    private function submit(array $post, array $files, I18n $i18n, View $view): Response
     {
-        $result = (new OrderValidator())->validate($post, $i18n->lang);
+        $uploads = new UploadValidator($this->config->uploadMaxBytes(), $this->config->uploadMaxFiles(), $this->isUploadedFile);
+        $result = (new OrderValidator($uploads))->validate($post, $i18n->lang, $files);
         if (!$result->isValid()) {
             // Status 200 statt 422: manche Hoster ersetzen 4xx-Antworten durch eigene Fehlerseiten.
             return $this->form($view, $result->values, $result->errors);
         }
 
-        // Schritt c: Hier gehen die Mails ans Notariat und die Bestätigung an die Bank.
-        // Im Mock-Modus wird nichts gesendet.
+        // Ausweiskopien für den Mailversand vorbereiten (grosse Fotos verkleinern, Graph-Grenze prüfen).
+        [$attachments, $attachmentError] = (new AttachmentPreparer())->prepare($result->order->attachments);
+        if ($attachmentError !== null) {
+            return $this->form($view, $result->values, ['ausweis' => $attachmentError]);
+        }
+        $order = $result->order->withAttachments($attachments);
+
+        // Schritt c: Hier gehen die Mails ans Notariat (mit Ausweiskopien) und die Bestätigung an die Bank.
+        // Im Mock-Modus werden die Ausweiskopien nur geprüft und verworfen – es wird nichts gesendet.
+        unset($order);
         $mailed = true;
 
         // Die Bestätigungsseite erhält nur Sprache und Versandstatus – keine Antragsdaten in der URL.

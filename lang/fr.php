@@ -43,6 +43,11 @@ return [
     'field.telefon.number' => 'Numéro',
     'field.telefon.hint' => "Par exemple 031 123 45 67. Pour «\u{a0}Autre\u{a0}», veuillez indiquer l’indicatif du pays, par exemple +34 612 34 56 78.",
 
+    'section.ausweis' => 'Copies des pièces d’identité',
+    'field.ausweis' => 'Copies des pièces d’identité des propriétaires fonciers',
+    'field.ausweis.hint' => "Veuillez téléverser des copies bien lisibles du passeport ou de la carte d’identité de tous les propriétaires fonciers, recto et verso pour une carte d’identité. Sélectionnez plusieurs fichiers ensemble dans la même fenêtre. Au maximum {files}\u{a0}fichiers\u{a0}: photos JPG ou PNG (jusqu’à {max}\u{a0}Mo chacune) ou PDF (jusqu’à {pdfmax}\u{a0}Mo chacun, idéalement un PDF par personne). Les photos au format iPhone HEIC ne sont pas acceptées.",
+    'field.ausweis.privacy' => 'Les fichiers ne sont pas enregistrés chez nous. Ils sont uniquement transmis par e-mail à l’étude avec votre demande.',
+
     'fees.heading' => 'Remarques concernant les frais',
     'fees.text' => "Nos honoraires se situent entre CHF 1'000.- et 1'500.-. S’y ajoutent les émoluments du registre foncier d’environ CHF 150.00 (selon les inscriptions concrètes).",
 
@@ -78,6 +83,15 @@ return [
     'error.telefon.required' => 'Veuillez indiquer le numéro de téléphone de la personne de contact.',
     'error.telefon.invalid' => 'Veuillez indiquer un numéro de téléphone valable, par exemple 031 123 45 67.',
     'error.telefon.needs_code' => 'Veuillez indiquer le numéro avec l’indicatif du pays, par exemple +34 612 34 56 78.',
+    'error.ausweis.required' => 'Veuillez téléverser les copies des pièces d’identité des propriétaires fonciers.',
+    'error.ausweis.too_many' => 'Veuillez téléverser au maximum {max} fichiers.',
+    'error.ausweis.too_big' => "Un fichier est trop volumineux ({max}\u{a0}Mo au maximum par fichier).",
+    'error.ausweis.too_big_mail' => "Un fichier est trop volumineux pour l’envoi ({max}\u{a0}Mo au maximum). Veuillez téléverser des PDF plus petits, par exemple un PDF par personne, ou des photos.",
+    'error.ausweis.type' => "Ce format de fichier n’est pas accepté. Formats autorisés\u{a0}: JPG, PNG et PDF.",
+    'error.ausweis.invalid' => 'Un fichier est vide ou endommagé. Veuillez le sélectionner à nouveau.',
+    'error.ausweis.failed' => 'Un fichier n’a pas pu être transmis. Veuillez réessayer.',
+    'error.ausweis.again' => 'Veuillez sélectionner à nouveau les fichiers. Pour des raisons de protection des données, le formulaire ne les conserve pas.',
+    'error.ausweis.post_too_big' => "Les fichiers sont trop volumineux au total. Veuillez remplir à nouveau le formulaire et choisir des fichiers plus petits ({max}\u{a0}Mo au maximum par fichier).",
     'error.datenschutz.required' => 'Veuillez confirmer avoir lu la déclaration de protection des données.',
     'error.generic.title' => 'Une erreur est survenue',
     'error.generic' => 'Votre demande n’a pas pu être traitée. Veuillez réessayer plus tard ou nous appeler au {phone}.',

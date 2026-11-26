@@ -22,7 +22,7 @@ Domain: `schuldbrief.domenig.law`.
 
 ```
 public/      einziger öffentlicher Ordner (index.php, assets/)
-src/         Logik: Order/ (Antrag, Validierung, Betrag), Security/, Http/
+src/         Logik: Order/ (Antrag, Validierung, Betrag, Upload, Anhänge), Security/, Http/
 templates/   PHP-Templates (layout, form, confirmation, message)
 lang/        de.php · fr.php · en.php – alle Texte
 tests/       PHPUnit
@@ -40,12 +40,16 @@ tests/       PHPUnit
   von Trevor Trnavsky: **ausstehend** (der Entscheid vom 06.11.2026, Variante B, gilt nur für
   das Beglaubigungstool). Ohne Entscheid kein Livegang mit Upload. Sonst kein Upload, keine
   weiteren Dateiarten ohne neuen Entscheid. Regeln wie im Beglaubigungstool:
-  - Nur JPG, PNG, PDF; Typ am **Inhalt** erkennen, nie an Endung oder Browser-Typ.
+  - Nur JPG, PNG, PDF; Typ am **Inhalt** erkennen, nie an Endung oder Browser-Typ
+    (`src/Order/UploadValidator.php`). Grenzen über `UPLOAD_MAX_MB` (5) / `UPLOAD_MAX_FILES` (6).
   - Datei nur im **Arbeitsspeicher**, temporäre Datei sofort löschen. Nie auf Platte, nie in die
     Bestätigung an die Bank, nie in Logs. Der Originalname wird nicht übernommen.
   - Sie verlässt den Server **nur als Anhang der Mail ans Notariat**. Im Mock-Modus wird sie
     geprüft und verworfen.
   - Nach einem Formularfehler muss die Datei erneut gewählt werden (nichts wird zwischengespeichert).
+  - Fotos über 1.5 MB werden verkleinert (`AttachmentPreparer`): vorher nach EXIF richtig
+    herum drehen (GD verliert die Angabe), bei zu wenig Arbeitsspeicher nicht verkleinern.
+    PDFs über 2.8 MB werden abgelehnt (Graph-Grenze mit Mail.Send, kein Mail.ReadWrite).
 - **Keine Fremdquellen im Frontend**: kein CDN, kein Google Fonts, keine Analytics,
   kein reCAPTCHA. Die CSP in `src/Http/Response.php` erzwingt das – nicht lockern.
   Keine Inline-Skripte oder Inline-Styles (CSP).
@@ -95,7 +99,8 @@ tests/       PHPUnit
 ## Stand
 
 - [x] a) Formular, Validierung (inkl. Betrag im Schweizer Format), DE/FR/EN, Mock-Modus
-- [ ] b) Upload der Ausweiskopien (mehrere Dateien), Verkleinern grosser Fotos
+- [x] b) Upload der Ausweiskopien (bis 6 Dateien), Verkleinern grosser Fotos inkl. EXIF-Drehung,
+  PHP-Grenzen im Dockerfile. Im Mock-Modus geprüft und verworfen (Versand folgt mit c)
 - [ ] c) Microsoft Graph: interne Mails (Aufteilung bei ~3 MB), Bestätigung an die Bank, Testmodus
 - [ ] d) Spamschutz (Fallenfeld, Mindest-Ausfüllzeit, Limit pro IP), README mit Betrieb,
   Schlüsselwechsel, Fehlersuche und Livegang-Checkliste

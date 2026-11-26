@@ -6,6 +6,7 @@
  * @var callable $t @var callable $th @var callable $e
  * @var \Schuldbrief\I18n $i18n @var \Schuldbrief\Config $config
  */
+use Schuldbrief\Order\AttachmentPreparer;
 use Schuldbrief\Order\Options;
 use Schuldbrief\Order\OrderValidator;
 
@@ -33,6 +34,9 @@ $error = static function (string $f) use ($errors, $t): string {
 $req = '<span class="req" aria-hidden="true">*</span>';
 
 $vorwahl = $values['vorwahl'] ?? Options::DIAL_DEFAULT;
+// Ausweiskopien: Grenzen kommen aus der Konfiguration (UPLOAD_MAX_MB, UPLOAD_MAX_FILES).
+$uploadMaxMb = (int) ceil($config->uploadMaxBytes() / 1048576);
+$ausweisDescribedBy = 'hint-ausweis hint-ausweis-privacy' . ($has('ausweis') ? ' err-ausweis' : '');
 $privacyLink = '<a href="' . $e($config->privacyUrl($i18n->lang)) . '" target="_blank" rel="noopener">'
     . $t('field.datenschutz.link') . '<span class="sr-only"> ' . $t('a11y.new_window') . '</span></a>';
 ?>
@@ -54,7 +58,7 @@ $privacyLink = '<a href="' . $e($config->privacyUrl($i18n->lang)) . '" target="_
   </div>
   <?php endif ?>
 
-  <form class="form" id="f-form" method="post" action="?lang=<?= $e($i18n->lang) ?>" novalidate data-form>
+  <form class="form" id="f-form" method="post" action="?lang=<?= $e($i18n->lang) ?>" enctype="multipart/form-data" novalidate data-form>
     <input type="hidden" name="lang" value="<?= $e($i18n->lang) ?>">
 
     <section class="block" aria-labelledby="h-property">
@@ -142,6 +146,20 @@ $privacyLink = '<a href="' . $e($config->privacyUrl($i18n->lang)) . '" target="_
         <p class="hint" id="hint-telefon"><?= $t('field.telefon.hint') ?></p>
         <?= $error('vorwahl') ?><?= $error('telefon') ?>
       </fieldset>
+    </section>
+
+    <section class="block" aria-labelledby="h-ausweis">
+      <h2 id="h-ausweis"><?= $t('section.ausweis') ?></h2>
+      <div class="field<?= $fieldClass('ausweis') ?>">
+        <label for="f-ausweis"><?= $t('field.ausweis') ?> <?= $req ?></label>
+        <?php // «ausweis[]» + multiple: mehrere Dateien; funktioniert auch ohne JavaScript. Nach einem Fehler muss neu gewählt werden. ?>
+        <input type="file" id="f-ausweis" name="ausweis[]" multiple required
+               accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+               aria-describedby="<?= $e($ausweisDescribedBy) ?>"<?= $has('ausweis') ? ' aria-invalid="true"' : '' ?>>
+        <p class="hint" id="hint-ausweis"><?= $t('field.ausweis.hint', ['files' => $config->uploadMaxFiles(), 'max' => $uploadMaxMb, 'pdfmax' => min($uploadMaxMb, AttachmentPreparer::maxMailMb())]) ?></p>
+        <p class="hint" id="hint-ausweis-privacy"><?= $t('field.ausweis.privacy') ?></p>
+        <?= $error('ausweis') ?>
+      </div>
     </section>
 
     <section class="block" aria-labelledby="h-fees">

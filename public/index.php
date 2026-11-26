@@ -24,7 +24,9 @@ if (Health::matches((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_P
 try {
     $config = Config::load(APP_ROOT);
     $app = new App($config, APP_ROOT);
-    $response = $app->handle($method, $_GET, $_POST);
+    // Ist die Anfrage grösser als post_max_size, verwirft PHP Formularfelder UND Dateien: $_POST bleibt leer.
+    $bodyTooLarge = $method === 'POST' && $_POST === [] && $_FILES === [] && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0;
+    $response = $app->handle($method, $_GET, $_POST, $_FILES, $bodyTooLarge);
 } catch (Throwable $e) {
     error_log('Start fehlgeschlagen: ' . App::logLine($e));
     $response = Response::html(

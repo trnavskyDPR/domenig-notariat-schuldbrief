@@ -28,7 +28,23 @@ final class Order
         public readonly string $telefon,
         /** Sprache des Formulars (de, fr, en) – für die Bestätigung */
         public readonly string $lang,
+        /**
+         * Ausweiskopien der Grundeigentümer, nur im Arbeitsspeicher.
+         * Gehen ausschliesslich als Anhang der internen Mail ans Notariat hinaus.
+         *
+         * @var list<Attachment>
+         */
+        public readonly array $attachments = [],
     ) {
+    }
+
+    /** Gleicher Antrag mit vorbereiteten (z. B. verkleinerten) Anhängen. @param list<Attachment> $attachments */
+    public function withAttachments(array $attachments): self
+    {
+        $args = get_object_vars($this);
+        $args['attachments'] = $attachments;
+
+        return new self(...$args);
     }
 
     /** z. B. «CHF 1'250'000» */
