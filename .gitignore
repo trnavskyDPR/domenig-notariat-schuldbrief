@@ -1,0 +1,9 @@
+# Secrets bleiben lokal bzw. auf dem Server
+.env
+.env.*
+!.env.example
+
+# Nur für Tests, nicht auf den Server
+/vendor
+.phpunit.cache/
+.phpunit.result.cache

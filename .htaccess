@@ -1,0 +1,19 @@
+# Nur nötig, falls das Document-Root NICHT auf public/ gesetzt werden kann
+# und der ganze Ordner im Web-Root liegt. Dann wird alles nach public/
+# umgeleitet und Konfiguration, Quellcode und .env bleiben unerreichbar.
+
+Options -Indexes
+
+<FilesMatch "^\.|\.(md|json|lock|xml|dist|example|txt)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^public/ - [L]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>

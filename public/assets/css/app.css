@@ -1,0 +1,366 @@
+/* Domenig & Partner Notariat AG – Schuldbriefbestellung
+   Mobile first. Keine Fremdquellen: Schrift lokal, keine CDN. */
+
+/* ---------- Schrift: Barlow (SIL OFL, siehe fonts/OFL.txt) ---------- */
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/barlow-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/barlow-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/barlow-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/barlow-latin-ext-500-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/barlow-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/barlow-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ---------- Farben und Masse ----------
+   PLATZHALTER aus dem CD-Entwurf der Startseite – definitive Werte folgen.
+   Nur hier ändern, der Rest der Datei verwendet ausschliesslich die Variablen. */
+:root {
+  --color-primary: #007fa2;        /* Petrol, Buttons, Links, Auswahl */
+  --color-primary-dark: #005f7a;   /* Hover */
+  --color-primary-soft: #e3f1f5;   /* Kopfbereich, Hinweisbox */
+  --color-text: #10222e;
+  --color-muted: #5c6b74;
+  --color-border: #b9c7cd;         /* Eingabefelder */
+  --color-line: #dbe3e6;           /* Trennlinien */
+  --color-bg: #eef5f7;             /* Seitenhintergrund */
+  --color-surface: #ffffff;
+  --color-disabled: #f2f5f6;
+  --color-disabled-text: #8d999f;
+  --color-error: #b3261e;
+  --color-error-soft: #fdf0ef;
+  --color-success-soft: #e8f4ec;
+  --color-test: #fff4ce;
+  --color-test-text: #5c4400;
+
+  --font: "Barlow", Arial, sans-serif;
+  --radius: 6px;
+  --gutter: 16px;
+  --focus: 0 0 0 3px var(--color-surface), 0 0 0 5px var(--color-primary);
+}
+
+/* ---------- Grundlagen ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: light; -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 400 1rem/1.5 var(--font);
+}
+
+h1, h2, h3 { font-weight: 600; line-height: 1.25; margin: 0 0 0.5rem; }
+h1 { font-size: 1.6rem; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0 0 0.75rem; }
+
+a { color: var(--color-primary); text-underline-offset: 2px; }
+a:hover { color: var(--color-primary-dark); }
+
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 2px; }
+[tabindex="-1"]:focus { outline: none; box-shadow: none; }
+
+/* Fallenfeld gegen Bots (siehe SpamGuard) */
+.hp {
+  position: absolute !important;
+  left: -10000px;
+  width: 1px; height: 1px;
+  overflow: hidden;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+.skip-link {
+  position: absolute; left: var(--gutter); top: -100px;
+  background: var(--color-surface); color: var(--color-primary);
+  padding: 8px 12px; z-index: 10; border-radius: var(--radius);
+}
+.skip-link:focus { top: 8px; }
+
+[hidden] { display: none !important; }
+
+/* ---------- Testmodus ---------- */
+.test-banner {
+  margin: 0;
+  padding: 8px var(--gutter);
+  background: var(--color-test);
+  color: var(--color-test-text);
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ---------- Kopf, Seite, Fuss ---------- */
+.site-header {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 12px var(--gutter) 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.lang-switch { align-self: flex-end; }
+.lang-switch ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.lang-switch a {
+  display: inline-block;
+  min-width: 44px;
+  padding: 8px 6px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  border-radius: var(--radius);
+}
+.lang-switch a:hover { color: var(--color-primary); }
+.lang-switch a[aria-current="true"] { color: var(--color-primary); background: var(--color-surface); font-weight: 600; }
+
+.logo-link { display: block; line-height: 0; }
+.logo { display: block; width: auto; height: 34px; max-width: 100%; }
+
+.page { max-width: 860px; margin: 0 auto; padding: 0 var(--gutter) 24px; }
+.page:focus { outline: none; }
+
+.site-footer {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 32px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+.site-footer p { margin: 0; }
+
+/* ---------- Karte ---------- */
+.card {
+  background: var(--color-surface);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(16, 34, 46, 0.06), 0 8px 24px rgba(16, 34, 46, 0.06);
+  overflow: hidden;
+}
+
+.card__head {
+  background: var(--color-primary-soft);
+  padding: 20px var(--gutter);
+}
+.card__head p { margin-bottom: 0.5rem; }
+.card__head p:last-child { margin-bottom: 0; }
+.card__head--success { background: var(--color-success-soft); }
+.card__note { color: var(--color-muted); font-size: 0.9rem; }
+
+.block {
+  padding: 20px var(--gutter);
+  border-top: 1px solid var(--color-line);
+}
+.card__head + .block,
+.error-summary + .form .block:first-child { border-top: 0; }
+.block:focus { outline: none; }
+.block > h2 { margin-bottom: 1rem; }
+
+.req { color: var(--color-error); font-weight: 600; }
+.optional { color: var(--color-muted); font-weight: 400; }
+
+/* ---------- Fehlerübersicht ---------- */
+.error-summary {
+  margin: 20px var(--gutter) 0;
+  padding: 16px;
+  border: 2px solid var(--color-error);
+  border-radius: var(--radius);
+  background: var(--color-error-soft);
+}
+.error-summary:focus { box-shadow: var(--focus); }
+.error-summary h2 { color: var(--color-error); margin-bottom: 0.5rem; }
+.error-summary ul { margin: 0; padding-left: 1.2rem; }
+.error-summary a { color: var(--color-error); font-weight: 500; }
+
+/* ---------- Formularfelder ---------- */
+.row { display: grid; gap: 0 16px; }
+
+.field { margin: 0 0 16px; }
+.field:last-child { margin-bottom: 0; }
+
+.field label,
+.group legend {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.group { border: 0; padding: 0; min-width: 0; }
+.group legend { padding: 0; }
+.sublabel { font-size: 0.85rem; color: var(--color-muted); font-weight: 400 !important; }
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="file"],
+select {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  appearance: none;
+}
+select {
+  padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-muted) 50%),
+                    linear-gradient(135deg, var(--color-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+input[type="file"] { padding: 8px 12px; cursor: pointer; }
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 6px 12px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-bg, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+input:hover, select:hover { border-color: var(--color-muted); }
+input:focus-visible, select:focus-visible { border-color: var(--color-primary); }
+
+input[aria-invalid="true"],
+select[aria-invalid="true"] { border-color: var(--color-error); border-width: 2px; }
+
+.hint { margin: 4px 0 0; font-size: 0.875rem; color: var(--color-muted); }
+.field__error {
+  margin: 6px 0 0;
+  color: var(--color-error);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.field__error::before { content: "! "; font-weight: 700; }
+
+.phone { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 8px; }
+
+.check {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: start;
+  margin-top: 20px;
+}
+.check input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--color-primary); }
+.check label { font-weight: 400; margin: 0; }
+.check .field__error { grid-column: 2; }
+
+/* ---------- Hinweisbox ---------- */
+.info {
+  margin: 20px 0 0;
+  padding: 14px 16px;
+  background: var(--color-primary-soft);
+  border-radius: var(--radius);
+}
+.info__title { font-size: 1rem; margin-bottom: 6px; }
+.info p:last-child { margin-bottom: 0; }
+.spaced { margin-top: 20px; }
+.block > .info:first-child { margin-top: 0; }
+
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 20px;
+  padding: 12px 28px;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: #fff;
+  font: 600 1.05rem/1.2 var(--font);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); color: #fff; }
+.btn:disabled { opacity: 0.7; cursor: progress; }
+.btn--secondary { background: var(--color-surface); color: var(--color-primary); width: auto; }
+.btn--secondary:hover { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+
+/* ---------- Grössere Bildschirme ---------- */
+@media (min-width: 520px) {
+  .row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .field--narrow { max-width: 22rem; }
+}
+
+@media (min-width: 720px) {
+  :root { --gutter: 32px; }
+  h1 { font-size: 1.9rem; }
+  .logo { height: 46px; }
+  .site-header { padding-top: 16px; padding-bottom: 28px; }
+  .site-header { position: relative; }
+  .lang-switch { position: absolute; right: var(--gutter); top: 12px; }
+  .card__head { padding: 28px var(--gutter); }
+  .block { padding: 28px var(--gutter); }
+  .btn { width: auto; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn { transition: background-color 0.12s ease, border-color 0.12s ease; }
+}
+
+@media print {
+  .test-banner, .lang-switch, .skip-link, .btn { display: none; }
+  body { background: #fff; }
+  .card { box-shadow: none; }
+}

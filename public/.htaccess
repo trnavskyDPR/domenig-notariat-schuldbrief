@@ -1,0 +1,31 @@
+# Document-Root der Subdomain schuldbrief.domenig.law zeigt auf diesen Ordner.
+
+Options -Indexes
+DirectoryIndex index.php
+
+# Keine versteckten Dateien ausliefern
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Schriften, Bilder, CSS und JS dürfen lange im Browser-Cache bleiben (Version steht im Link)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Health-Check für Atoll (und Prometheus): /metrics wird von index.php beantwortet.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^metrics$ index.php [L]
+</IfModule>
+
+AddType font/woff2 .woff2

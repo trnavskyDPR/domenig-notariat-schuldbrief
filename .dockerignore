@@ -1,0 +1,16 @@
+.git
+.claude
+.env
+.env.*
+!.env.example
+vendor
+tests
+docs
+.phpunit.cache
+.phpunit.result.cache
+*.md
+phpunit.xml
+composer.json
+composer.lock
+Dockerfile
+.dockerignore
