@@ -17,7 +17,8 @@ Vollzeit-Entwickler). Code einfach und gut kommentiert halten.
 PHP 8.1+ ohne Framework, Vanilla-JS, eigenes CSS. Einzige Erweiterungen: curl, gd.
 Betrieb als Docker-Container auf **Atoll** (Eutima), Environment «Production» aus `main`.
 Kein Build-Schritt ausser dem Dockerfile. Composer nur lokal für PHPUnit.
-Repo vorerst im Account von Trevor, später Übertragung nach `domenig-partner/domenig-notariat-schuldbrief`.
+Repo `domenig-partner/domenig-notariat-schuldbrief` (aufgebaut in `trnavskyDPR/domenig-notariat-schuldbrief`,
+am 26.11.2026 übertragen; das alte Repo wird archiviert).
 Domain: `schuldbrief.domenig.law`.
 
 ```
