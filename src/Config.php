@@ -18,7 +18,7 @@ final class Config
 
     private const DEFAULTS = [
         'APP_MODE' => 'mock',
-        'CONTACT_PHONE' => '+41 31 380 11 00',
+        'CONTACT_PHONE' => '+41 58 531 20 00',
         'CONTACT_EMAIL' => 'notariat@domenig.law',
         'OFFICE_ADDRESS' => 'Laupenstrasse 1, 3008 Bern',
         'PRIVACY_URL_DE' => 'https://www.domenig.law/datenschutz',

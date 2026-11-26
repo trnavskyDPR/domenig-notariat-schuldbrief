@@ -43,7 +43,7 @@ composer test
 |---|---|---|
 | `APP_MODE` | `mock` | `mock` = nichts wird gesendet · `test` = alle Mails ans Testpostfach · `live` = produktiv |
 | `APP_SECRET` | – | Zufallsschlüssel, mind. 32 Zeichen. In `test`/`live` Pflicht. Erzeugen: `php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'` |
-| `CONTACT_PHONE` | `+41 31 380 11 00` | Telefon für Hinweise und Fehlerseiten |
+| `CONTACT_PHONE` | `+41 58 531 20 00` | Telefon für Hinweise und Fehlerseiten |
 | `CONTACT_EMAIL` | `notariat@domenig.law` | Kontaktadresse |
 | `OFFICE_ADDRESS` | `Laupenstrasse 1, 3008 Bern` | Adresse in der Fusszeile |
 | `PRIVACY_URL_DE` / `_FR` / `_EN` | `https://www.domenig.law/datenschutz` | Datenschutzerklärung je Sprache, leer = deutsche Fassung |

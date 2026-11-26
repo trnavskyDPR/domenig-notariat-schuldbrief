@@ -161,7 +161,7 @@ final class AppTest extends TestCase
         $response = self::submit(self::validPost(), self::app(['APP_MODE' => 'live']));
         ini_set('error_log', (string) $errorLog);
         self::assertSame(500, $response->status);
-        self::assertStringContainsString('+41 31 380 11 00', $response->body);
+        self::assertStringContainsString('+41 58 531 20 00', $response->body);
         self::assertStringNotContainsString('Anna', $response->body);
     }
 

@@ -29,7 +29,7 @@ try {
     error_log('Start fehlgeschlagen: ' . App::logLine($e));
     $response = Response::html(
         '<!doctype html><html lang="de"><meta charset="utf-8"><title>Fehler</title>'
-        . '<p>Das Antragsformular ist im Moment nicht verfügbar. Bitte rufen Sie uns an: +41 31 380 11 00</p>',
+        . '<p>Das Antragsformular ist im Moment nicht verfügbar. Bitte rufen Sie uns an: +41 58 531 20 00</p>',
         503,
     );
 }
